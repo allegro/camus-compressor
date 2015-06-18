@@ -1,0 +1,164 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url 'http://dl.bintray.com/gesellix/gradle-plugins' }
+        maven { url 'http://repo.spring.io/plugins-release' }
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.1.1'
+        classpath 'de.gesellix:gradle-debian-plugin:14'
+    }
+}
+
+plugins {
+    id 'pl.allegro.tech.build.axion-release' version '1.2.3'
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+apply plugin: 'jacoco'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+/***** provided scope *****/
+
+configurations {
+    provided
+}
+
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+        runtimeClasspath += configurations.provided
+    }
+    test {
+        compileClasspath += configurations.provided
+        runtimeClasspath += configurations.provided
+    }
+}
+
+idea {
+    module {
+        scopes.PROVIDED.plus += [configurations.provided]
+    }
+}
+eclipse {
+    classpath {
+        plusConfigurations += [configurations.provided]
+    }
+}
+
+/***** shadowJar *****/
+shadowJar {
+    mergeServiceFiles()
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+sourceCompatibility = 1.7
+
+project.group = 'pl.allegro.tech.hadoop'
+scmVersion {
+    tag {
+        prefix = project.rootProject.name
+    }
+}
+project.version = scmVersion.version
+mainClassName = 'pl.allegro.tech.hadoop.compressor.Compressor'
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}
+
+/***** dependencies *****/
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://typesafe.artifactoryonline.com/typesafe/twitter-cache"
+    }
+    maven {
+        url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+    }
+}
+dependencies {
+    provided ('org.apache.spark:spark-core_2.10:1.2.0')
+    provided 'org.scala-lang:scala-library:2.10.2'
+    provided ('org.apache.hadoop:hadoop-hdfs:2.5.0') {
+        exclude group: 'javax.servlet'
+    }
+    
+    compile 'com.hadoop.gplcompression:hadoop-lzo:0.4.19'
+    
+    testCompile 'org.mockito:mockito-all:1.9.5'
+    testCompile 'junit:junit:4.11'
+	testCompile ('org.apache.hadoop:hadoop-hdfs:2.5.0:tests') {
+        exclude group: 'javax.servlet'
+    }
+	testCompile ('org.apache.hadoop:hadoop-common:2.5.0:tests') {
+        exclude group: 'javax.servlet'
+    }
+}
+
+
+/***** packaging *****/
+
+apply plugin: 'pkg-debian'
+task prepareControlFile(type: Copy) {
+  from 'src/package'
+  into 'build/package'
+  include 'control.tpl'
+  rename { file -> 'control' }
+  expand(project: project)
+}
+
+debian {
+  packagename = "camus-compressor"
+  controlDirectory = "build/package"
+  changelogFile = "src/package/changelog"
+
+  data {
+    def baseDir = "build"
+    file {
+      name = "${baseDir}/libs/camus-compressor-${project.version}-all.jar"
+      target = "usr/lib/hadoop-tools/camus-compressor/compressor-${project.version}.jar"
+      mapper {
+        fileMode = "644"
+      }
+    }
+    file {
+      name = "src/main/resources/compressor.sh"
+      target = "usr/lib/hadoop-tools/camus-compressor/compressor.sh"
+      mapper {
+        fileMode = "755"
+      }
+    }
+    link {
+      path = "usr/lib/hadoop-tools/camus-compressor/compressor.jar"
+      name = "/usr/lib/hadoop-tools/camus-compressor/compressor-${project.version}.jar"
+    }
+  }
+}
+
+
+/***** integration tests *****/
+
+sourceSets {
+    integration {
+        compileClasspath += sourceSets.test.compileClasspath
+        runtimeClasspath += sourceSets.test.runtimeClasspath
+        java.srcDir file('src/integration/java')
+    }
+}
+
+task integration(type: Test) {
+    testClassesDir = sourceSets.integration.output.classesDir
+    classpath = project.sourceSets.main.output +
+       project.sourceSets.integration.output +
+       sourceSets.test.compileClasspath
+    
+    dependsOn integrationClasses
+}
+
+//check.dependsOn integTest
