@@ -81,7 +81,11 @@ repositories {
     maven {
         url "https://repository.cloudera.com/artifactory/cloudera-repos/"
     }
+    maven {
+        url "http://maven.twttr.com"
+    }
 }
+
 dependencies {
     provided ('org.apache.spark:spark-core_2.10:1.2.0')
     provided 'org.scala-lang:scala-library:2.10.2'

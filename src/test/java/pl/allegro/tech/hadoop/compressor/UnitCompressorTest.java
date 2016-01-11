@@ -56,7 +56,7 @@ public class UnitCompressorTest {
     public void shouldCompress() throws Exception {
         // given
         when(sparkContext.textFile(eq(UNIT_PATH_NAME))).thenReturn(testRDD);
-        when(testRDD.coalesce(anyInt())).thenReturn(testRDD);
+        when(testRDD.repartition(anyInt())).thenReturn(testRDD);
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
@@ -133,7 +133,7 @@ public class UnitCompressorTest {
     public void shouldContinueWhenSuccessFileNotExists() throws Exception {
         // given
         when(sparkContext.textFile(eq(UNIT_PATH_NAME))).thenReturn(testRDD);
-        when(testRDD.coalesce(anyInt())).thenReturn(testRDD);
+        when(testRDD.repartition(anyInt())).thenReturn(testRDD);
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
