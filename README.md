@@ -1,5 +1,7 @@
 # Camus Compressor
 
+[![Build Status](https://travis-ci.org/allegro/camus-compressor.svg?branch=master)](https://travis-ci.org/allegro/camus-compressor)
+
 Camus Compressor merges files created by [Camus]( https://github.com/linkedin/camus) 
 and saves them in a compressed format.
 
