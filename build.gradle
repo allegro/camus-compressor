@@ -141,4 +141,5 @@ task integration(type: Test) {
     dependsOn integrationClasses
 }
 
-//check.dependsOn integTest
+check.dependsOn integration
+integration.mustRunAfter test
