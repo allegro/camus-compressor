@@ -52,7 +52,7 @@ public class UnitCompressor {
         }
         logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
 
-        final JavaRDD<String> rdd = context.textFile(inputPath).coalesce(compression.getSplits(inputSize));
+        final JavaRDD<String> rdd = context.textFile(inputPath).repartition(compression.getSplits(inputSize));
         context.setJobGroup("compression", String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize)));
         compression.compress(rdd, outputDir);
 
