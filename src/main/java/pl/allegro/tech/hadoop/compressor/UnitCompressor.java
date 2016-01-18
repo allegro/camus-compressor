@@ -33,7 +33,11 @@ public class UnitCompressor {
     public void compressUnit(String unitPath) throws IOException {
         final String inputPath = String.format("%s/*", unitPath);
         final String outputDir = getTemporaryDirPath(unitPath);
-        final long inputSize = countInputSize(inputPath);
+        long inputSize = 0;
+
+        if (countNonCompressedInputSize(inputPath) != 0) {
+            inputSize = countWholeInputSize(inputPath);
+        }
 
         if (inputSize == 0L) {
             logger.info(String.format("Found 0 files in dir %s", unitPath));
@@ -52,7 +56,7 @@ public class UnitCompressor {
         }
         logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
 
-        final JavaRDD<String> rdd = context.textFile(inputPath).coalesce(compression.getSplits(inputSize));
+        final JavaRDD<String> rdd = context.textFile(inputPath).repartition(compression.getSplits(inputSize));
         context.setJobGroup("compression", String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize)));
         compression.compress(rdd, outputDir);
 
@@ -82,7 +86,7 @@ public class UnitCompressor {
         return fileSystem.exists(new Path(outputDir));
     }
 
-    public long countInputSize(String inputPattern) throws IOException {
+    public long countNonCompressedInputSize(String inputPattern) throws IOException {
         long total = 0;
         for (FileStatus file : fileSystem.globStatus(new Path(inputPattern))) {
             if (!file.getPath().toString().endsWith("." + compression.getExtension())) {
@@ -92,9 +96,17 @@ public class UnitCompressor {
         return total;
     }
 
+    public long countWholeInputSize(String inputPattern) throws IOException {
+        long total = 0;
+        for (FileStatus file : fileSystem.globStatus(new Path(inputPattern))) {
+            total += file.getLen();
+        }
+        return total;
+    }
+
     public boolean remove(String path, boolean recursive) throws IOException {
         return fileSystem.delete(new Path(path), recursive);
     }
 
-
 }
+
