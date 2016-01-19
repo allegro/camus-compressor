@@ -57,7 +57,7 @@ public final class Compressor {
 
     private static InputAnalyser createInputAnalyser(String[] args, FileSystem fileSystem, Compression compression) {
         boolean forceSplit = false;
-        if (Arrays.asList(args).contains("--forceSplit")) {
+        if (Arrays.asList(args).contains("--force")) {
             forceSplit = true;
         }
         return new InputAnalyser(fileSystem, compression, forceSplit);
