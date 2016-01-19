@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 
@@ -12,10 +13,12 @@ public class SnappyCompression implements Compression {
 
     private JavaSparkContext sparkContext;
     private long inputBlockSize;
+    private static final Logger logger = Logger.getLogger(SnappyCompression.class);
 
     public SnappyCompression(FileSystem fileSystem, JavaSparkContext sparkContext) {
         this.sparkContext = sparkContext;
         this.inputBlockSize = fileSystem.getDefaultBlockSize(new Path("/")) * 2;
+        logger.warn("BlockSize = " + this.inputBlockSize);
     }
 
     @Override
