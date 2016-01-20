@@ -37,7 +37,7 @@ public final class Compressor {
         final CamusCompressor camusCompressor = new CamusCompressor(fileSystem, topicCompressor, Integer.valueOf(sparkConf.get("spark.executor.instances")));
 
         if ("all".equals(compressObject)) {
-            camusCompressor.comressAll(inputDir);
+            camusCompressor.compressAll(inputDir);
         } else if ("topic".equals(compressObject)) {
             topicCompressor.compressTopic(inputDir);
         } else if ("unit".equals(compressObject)) {
