@@ -45,7 +45,7 @@ public class CamusCompressorTest {
         when(fileSystem.listStatus(new Path("camus_dir"))).thenReturn(topics);
 
         // when
-        camusCompressor.comressAll("camus_dir");
+        camusCompressor.compressAll("camus_dir");
 
         // then
         verify(topicCompressor).compressTopic(new Path(PATH_PREFIX + "topic1"));

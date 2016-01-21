@@ -3,7 +3,6 @@ package pl.allegro.tech.hadoop.compressor;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
@@ -19,11 +18,13 @@ public class UnitCompressor {
     private final FileSystem fileSystem;
     private final JavaSparkContext context;
     private final Compression compression;
+    private final InputAnalyser inputAnalyser;
 
-    public UnitCompressor(JavaSparkContext context, FileSystem fileSystem, Compression compression) {
+    public UnitCompressor(JavaSparkContext context, FileSystem fileSystem, Compression compression, InputAnalyser inputAnalyser) {
         this.context = context;
         this.fileSystem = fileSystem;
         this.compression = compression;
+        this.inputAnalyser = inputAnalyser;
     }
 
     public void compressUnit(Path unitPath) throws IOException {
@@ -33,34 +34,29 @@ public class UnitCompressor {
     public void compressUnit(String unitPath) throws IOException {
         final String inputPath = String.format("%s/*", unitPath);
         final String outputDir = getTemporaryDirPath(unitPath);
-        long inputSize = 0;
 
-        if (countNonCompressedInputSize(inputPath) != 0) {
-            inputSize = countWholeInputSize(inputPath);
-        }
-
-        if (inputSize == 0L) {
-            logger.info(String.format("Found 0 files in dir %s", unitPath));
-            return;
-        }
-
-        if (fileExists(outputDir)) {
-            if (fileExists(getSuccessFilePath(outputDir))) {
-                logger.info(String.format("Directory %s already compressed, removing input", outputDir));
-                cleanup(unitPath, outputDir);
-                return;
-            } else {
-                logger.info(String.format("Compressing %s has not finished last time, retrying", outputDir));
-                remove(outputDir, true);
+        if (inputAnalyser.shouldCompress(inputPath)) {
+            if (fileExists(outputDir)) {
+                if (fileExists(getSuccessFilePath(outputDir))) {
+                    logger.info(String.format("Directory %s already compressed, removing input", outputDir));
+                    cleanup(unitPath, outputDir);
+                    return;
+                } else {
+                    logger.info(String.format("Compressing %s has not finished last time, retrying", outputDir));
+                    remove(outputDir, true);
+                }
             }
+            long inputSize = inputAnalyser.countInputSize(inputPath);
+            logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
+
+            final JavaRDD<String> rdd = context.textFile(inputPath).repartition(inputAnalyser.countInputSplits(inputPath));
+            context.setJobGroup("compression", String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize)));
+            compression.compress(rdd, outputDir);
+
+            cleanup(unitPath, outputDir);
+        } else {
+            logger.info(String.format("Found 0 files in dir %s", unitPath));
         }
-        logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
-
-        final JavaRDD<String> rdd = context.textFile(inputPath).repartition(compression.getSplits(inputSize));
-        context.setJobGroup("compression", String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize)));
-        compression.compress(rdd, outputDir);
-
-        cleanup(unitPath, outputDir);
     }
 
     private String getTemporaryDirPath(String hourPath) {
@@ -84,24 +80,6 @@ public class UnitCompressor {
 
     private boolean fileExists(String outputDir) throws IOException {
         return fileSystem.exists(new Path(outputDir));
-    }
-
-    public long countNonCompressedInputSize(String inputPattern) throws IOException {
-        long total = 0;
-        for (FileStatus file : fileSystem.globStatus(new Path(inputPattern))) {
-            if (!file.getPath().toString().endsWith("." + compression.getExtension())) {
-                total += file.getLen();
-            }
-        }
-        return total;
-    }
-
-    public long countWholeInputSize(String inputPattern) throws IOException {
-        long total = 0;
-        for (FileStatus file : fileSystem.globStatus(new Path(inputPattern))) {
-            total += file.getLen();
-        }
-        return total;
     }
 
     public boolean remove(String path, boolean recursive) throws IOException {
