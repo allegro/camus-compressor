@@ -1,6 +1,7 @@
 package pl.allegro.tech.hadoop.compressor;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,19 +30,19 @@ public final class Compressor {
         final FileSystem fileSystem = FileSystemUtils.getFileSystem(configuration);
 
         final Compression compression = getCompression(compressor, fileSystem, sparkContext);
+        final InputAnalyser inputAnalyser = createInputAnalyser(args, fileSystem, compression);
 
-        final UnitCompressor unitCompressor = new UnitCompressor(sparkContext, fileSystem, compression);
+        final UnitCompressor unitCompressor = new UnitCompressor(sparkContext, fileSystem, compression, inputAnalyser);
         final TopicCompressor topicCompressor = new TopicCompressor(fileSystem, unitCompressor);
         final CamusCompressor camusCompressor = new CamusCompressor(fileSystem, topicCompressor, Integer.valueOf(sparkConf.get("spark.executor.instances")));
 
         if ("all".equals(compressObject)) {
-            camusCompressor.comressAll(inputDir);
+            camusCompressor.compressAll(inputDir);
         } else if ("topic".equals(compressObject)) {
             topicCompressor.compressTopic(inputDir);
         } else if ("unit".equals(compressObject)) {
             unitCompressor.compressUnit(inputDir);
         }
-
     }
 
     private static Compression getCompression(String compressor,
@@ -54,4 +55,11 @@ public final class Compressor {
         return new SnappyCompression(fileSystem, sparkContext);
     }
 
+    private static InputAnalyser createInputAnalyser(String[] args, FileSystem fileSystem, Compression compression) {
+        boolean forceSplit = false;
+        if (Arrays.asList(args).contains("--force")) {
+            forceSplit = true;
+        }
+        return new InputAnalyser(fileSystem, compression, forceSplit);
+    }
 }

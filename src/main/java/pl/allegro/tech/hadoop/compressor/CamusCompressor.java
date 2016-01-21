@@ -42,7 +42,7 @@ public class CamusCompressor {
         return paths;
     }
 
-    public void comressAll(Path camusDir) throws IOException {
+    public void compressAll(Path camusDir) throws IOException {
         logger.info(String.format("Compress all %s", camusDir));
         final List<Path> topicDirs = getTopicDirs(camusDir);
         for (final Path topicDir : topicDirs) {
@@ -70,7 +70,7 @@ public class CamusCompressor {
         };
     }
 
-    public void comressAll(String camusDir) throws IOException {
-        comressAll(new Path(camusDir));
+    public void compressAll(String camusDir) throws IOException {
+        compressAll(new Path(camusDir));
     }
 }

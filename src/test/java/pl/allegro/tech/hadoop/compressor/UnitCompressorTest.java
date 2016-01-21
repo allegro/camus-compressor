@@ -49,7 +49,8 @@ public class UnitCompressorTest {
 
     @Before
     public void setUp() {
-        unitCompressor = new UnitCompressor(sparkContext, fileSystem, compression);
+        InputAnalyser analyser = new InputAnalyser(fileSystem, compression, false);
+        unitCompressor = new UnitCompressor(sparkContext, fileSystem, compression, analyser);
     }
 
     @Test
