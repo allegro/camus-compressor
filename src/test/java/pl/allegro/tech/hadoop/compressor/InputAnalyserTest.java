@@ -39,6 +39,7 @@ public class InputAnalyserTest {
         String yesterdayDir = getYesterdayDir();
 
         String topicLocation = getTopicLocation();
+        when(fileSystem.getDefaultBlockSize(new Path("/"))).thenReturn(1024L);
         when(fileSystem.globStatus(new Path(String.format("%s/hourly/*/*/*/*", topicLocation)))).thenReturn(EMPTY_STATUSES);
         when(fileSystem.globStatus(new Path(String.format("%s/daily/%s", topicLocation, yesterdayDir)))).thenReturn(new FileStatus[]{
                 createFileStatusForPath(String.format("%s/%s/%s", topicLocation, todayDir, COMPRESSED_FILE)),
@@ -97,6 +98,36 @@ public class InputAnalyserTest {
         assertTrue(shouldCompress);
     }
 
+    @Test
+    public void shouldCountInputSize() throws IOException {
+        //given
+        boolean forceSplit = false;
+        String yesterdayDir = getYesterdayDir();
+        String topicLocation = getTopicLocation();
+        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+
+        //when
+        long inputSize = analyser.countInputSize(String.format("%s/daily/%s", topicLocation, yesterdayDir));
+
+        //then
+        assertTrue(inputSize == 2048L);
+    }
+
+    @Test
+    public void shouldCountInputSplits() throws IOException {
+        //given
+        boolean forceSplit = false;
+        String yesterdayDir = getYesterdayDir();
+        String topicLocation = getTopicLocation();
+        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+
+        //when
+        int inputSplits = analyser.countInputSplits(String.format("%s/daily/%s", topicLocation, yesterdayDir));
+
+        //then
+        assertTrue(inputSplits == 1);
+    }
+
     private String getTopicLocation() {
         return "/topics/mytopic";
     }
@@ -113,6 +144,6 @@ public class InputAnalyserTest {
     }
 
     private final FileStatus createFileStatusForPath(String fileLocation) {
-        return new FileStatus(10, false, 3, 1024, 100, new Path(fileLocation));
+        return new FileStatus(1024L, false, 3, 1024L, 100, new Path(fileLocation));
     }
 }
