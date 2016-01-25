@@ -3,19 +3,21 @@
 # defaults
 QUEUE="default"
 EXECUTORS=2
+DELAY=2
 COMPRESSION="snappy"
 
 function usage {
-  echo "Usage: compressor.sh [-c compression_format] [-e number_of_executors] [-q yarn_queue_name] -m mode -p path"
+  echo "Usage: compressor.sh [-c compression_format] [-e number_of_executors] [-q yarn_queue_name] -m mode -d delay_in_days -p path"
   echo "  Mode can be either all, topic or unit"
   echo "  Compression format can be either snappy, lzo or none"
   echo "  Default compression format is snappy"
   echo "  Default queue is \"default\""
   echo "  Default number of executors is 2"
+  echo "  Default number of days for compression delay is 2"
   exit 1
 }
 
-while getopts ":q:e:m:p:" opt; do
+while getopts ":q:e:m:d:p:" opt; do
   case $opt in
     q)
       QUEUE=$OPTARG
@@ -28,6 +30,9 @@ while getopts ":q:e:m:p:" opt; do
       ;;
     m)
       MODE=$OPTARG
+      ;;
+    d)
+      DELAY=$OPTARG
       ;;
     p)
       INPUTPATH=$OPTARG
@@ -52,4 +57,4 @@ spark-submit --class pl.allegro.tech.hadoop.compressor.Compressor \
   --queue $QUEUE \
   --master yarn-cluster \
   --num-executors $EXECUTORS \
-  /usr/lib/hadoop-tools/camus-compressor/compressor.jar $MODE $INPUTPATH $COMPRESSION
+  /usr/lib/hadoop-tools/camus-compressor/compressor.jar $MODE $INPUTPATH $COMPRESSION $DELAY

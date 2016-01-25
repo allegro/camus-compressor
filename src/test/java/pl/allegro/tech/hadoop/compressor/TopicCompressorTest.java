@@ -34,7 +34,7 @@ public class TopicCompressorTest {
 
     @Before
     public void setUp() {
-        topicCompressor = new TopicCompressor(fileSystem, unitCompressor);
+        topicCompressor = new TopicCompressor(fileSystem, unitCompressor, new TopicDateFilter(1));
     }
 
     @Test

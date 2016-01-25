@@ -39,7 +39,7 @@ public class CompressorIntegrationTest {
         prepareData();
 
         // when
-        Compressor.main(new String[] { "all", hdfsURI + "camus_main_dir", "none"});
+        Compressor.main(new String[] { "all", hdfsURI + "camus_main_dir", "none", "1"});
 
         // then
         checkUncompressed("/camus_main_dir/topic1/daily/" + todayPath + "/file1");

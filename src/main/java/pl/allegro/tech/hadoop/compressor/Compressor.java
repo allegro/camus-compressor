@@ -22,6 +22,7 @@ public final class Compressor {
         final String compressObject = args[0];
         final String inputDir = args[1];
         final String compressor = args[2];
+        final String delay = args[3];
 
         final SparkConf sparkConf = new SparkConf()
                 .setAppName(Compressor.class.getName());
@@ -30,10 +31,12 @@ public final class Compressor {
         final FileSystem fileSystem = FileSystemUtils.getFileSystem(configuration);
 
         final Compression compression = getCompression(compressor, fileSystem, sparkContext);
-        final InputAnalyser inputAnalyser = createInputAnalyser(args, fileSystem, compression);
 
+        final InputAnalyser inputAnalyser = createInputAnalyser(args, fileSystem, compression);
         final UnitCompressor unitCompressor = new UnitCompressor(sparkContext, fileSystem, compression, inputAnalyser);
-        final TopicCompressor topicCompressor = new TopicCompressor(fileSystem, unitCompressor);
+
+        final TopicDateFilter topicFilter = new TopicDateFilter(Integer.valueOf(delay));
+        final TopicCompressor topicCompressor = new TopicCompressor(fileSystem, unitCompressor, topicFilter);
         final CamusCompressor camusCompressor = new CamusCompressor(fileSystem, topicCompressor, Integer.valueOf(sparkConf.get("spark.executor.instances")));
 
         if ("all".equals(compressObject)) {
