@@ -34,6 +34,9 @@ Camus Compressor. Provided `src/main/resources/compressor.sh` file helps executi
      * `topic`: compress only one topic, put topic dir as the input path
      * `unit`: compress low-level camus directory (hour dir on hourly patitioning 
        and day dir on daily partitioning), put appropriate input path to unit
+ * `d`: Compression delay, in days (compress data older than given number of days, default: 2)
+
+By default Camus Compressor doesn't compress directories again, to force recompression add `--force` flag to `spark-submit`.
 
 ## How to build
 
