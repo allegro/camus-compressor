@@ -82,6 +82,12 @@ dependencies {
 }
 
 
+configurations {
+    runtime.exclude module: 'spark-core_2.10'
+    runtime.exclude module: 'scala-library'
+    runtime.exclude module: 'hadoop-hdfs'
+}
+
 /***** packaging *****/
 
 apply plugin: 'pkg-debian'
