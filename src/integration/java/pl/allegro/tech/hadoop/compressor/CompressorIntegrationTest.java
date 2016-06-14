@@ -80,7 +80,7 @@ public class CompressorIntegrationTest {
         stubSchemaRepo(schemaString, "topic2");
 
         // when
-        Compressor.main("all", hdfsURI + "camus_main_avro_dir", "snappy", "1", "avro", SCHEMAREPO_HOST);
+        Compressor.main("all", hdfsURI + "camus_main_avro_dir", "none", "1", "avro", SCHEMAREPO_HOST);
 
         // then
         checkUncompressed(FIRST_AVRO_SIZE, "/camus_main_avro_dir/topic1/daily/" + todayPath + "/file1.avro");
