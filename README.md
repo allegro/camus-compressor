@@ -19,6 +19,7 @@ partitioning. The tool runs in YARN and is build on [Spark](https://github.com/a
 
  * Snappy
  * LZO (needs extra [hadoop-lzo](https://github.com/twitter/hadoop-lzo) package on nodes)
+ * Deflate
 
 ## How to use
 
@@ -26,7 +27,8 @@ As mentioned above You need [Spark](https://github.com/apache/spark) packages to
 Camus Compressor. Provided `src/main/resources/compressor.sh` file helps executing 
 `spark-submit` commands by setting options:
 
- * `q`: YARN queue name (default:
+ * `c`: Compression format. Could be: `deflate`, `lzo`, `snappy` or `none` (default: `snappy`)
+ * `q`: YARN queue name (default: `default`)
  * `e`: Parrallelism level of task (number of spark executors, default: 2)
  * `p`: Input path
  * `m`: Input mode, can be either :
@@ -35,13 +37,19 @@ Camus Compressor. Provided `src/main/resources/compressor.sh` file helps executi
      * `unit`: compress low-level camus directory (hour dir on hourly patitioning 
        and day dir on daily partitioning), put appropriate input path to unit
  * `d`: Compression delay, in days (compress data older than given number of days, default: 2)
+ * `f`: Input files format - `json` or `avro`
+ * `s`: When your input files are in `avro` format you need to pass an URL to the 
+ [schema-repo][https://github.com/schema-repo/schema-repo] instance, e.g. `-s https://schemarepo.example.com/schema-repo`.
 
 By default Camus Compressor doesn't compress directories again, to force recompression add `--force` flag to `spark-submit`.
+
+Compressor assumes that Camus files are stored in a directory with the names equal to `kafkaTopic.replace(".", "_")`
+with optional `_avro` suffix. 
 
 ## How to build
 
 Camus Compressor is shipped as fatjar file or Debian package and build using Gradle. 
-To build fatjar run in `build/libs/`:
+To build fat-jar run in `build/libs/`:
     
     ./gradlew shadowJar
     

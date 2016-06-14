@@ -1,4 +1,4 @@
-package pl.allegro.tech.hadoop.compressor;
+package pl.allegro.tech.hadoop.compressor.mode;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class CamusCompressor {
+public class CamusCompressor implements Compress {
 
     private static final int COMPRESSOR_TIMEOUT_DAYS = 10;
     private FileSystem fileSystem;
@@ -42,7 +42,7 @@ public class CamusCompressor {
         return paths;
     }
 
-    public void compressAll(Path camusDir) throws IOException {
+    public void compress(Path camusDir) throws IOException {
         logger.info(String.format("Compress all %s", camusDir));
         final List<Path> topicDirs = getTopicDirs(camusDir);
         for (final Path topicDir : topicDirs) {
@@ -62,7 +62,7 @@ public class CamusCompressor {
             @Override
             public void run() {
                 try {
-                    topicCompressor.compressTopic(topicDir);
+                    topicCompressor.compress(topicDir);
                 } catch (IOException e) {
                     logger.error("Exception occured on compressing " + topicDir, e);
                 }
@@ -70,7 +70,7 @@ public class CamusCompressor {
         };
     }
 
-    public void compressAll(String camusDir) throws IOException {
-        compressAll(new Path(camusDir));
+    public void compress(String camusDir) throws IOException {
+        compress(new Path(camusDir));
     }
 }

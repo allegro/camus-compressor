@@ -1,13 +1,15 @@
-package pl.allegro.tech.hadoop.compressor;
-
-import java.io.IOException;
+package pl.allegro.tech.hadoop.compressor.mode;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
+import pl.allegro.tech.hadoop.compressor.mode.unit.UnitCompressor;
+import pl.allegro.tech.hadoop.compressor.util.TopicDateFilter;
 
-public class TopicCompressor {
+import java.io.IOException;
+
+public class TopicCompressor implements Compress {
 
     private FileSystem fileSystem;
     private UnitCompressor unitCompressor;
@@ -21,15 +23,15 @@ public class TopicCompressor {
         this.topicFilter = topicFilter;
     }
 
-    public void compressTopic(String topicDir) throws IOException {
+    public void compress(String topicDir) throws IOException {
         logger.info(String.format("Compress topic %s", topicDir));
 
         compress("hourly/*/*/*/*", topicDir);
         compress("daily/*/*/*", topicDir);
     }
 
-    public void compressTopic(Path topicDir) throws IOException {
-        compressTopic(topicDir.toString());
+    public void compress(Path topicDir) throws IOException {
+        compress(topicDir.toString());
     }
 
     private void compress(String unitPattern, String topicDir) throws IOException {
@@ -39,7 +41,7 @@ public class TopicCompressor {
 
         for (FileStatus unitStatus : fileStatuses) {
             if (topicFilter.shouldCompressTopicDir(unitStatus.getPath().toString().replace(topicDir, ""))) {
-                unitCompressor.compressUnit(unitStatus.getPath());
+                unitCompressor.compress(unitStatus.getPath());
             }
         }
     }

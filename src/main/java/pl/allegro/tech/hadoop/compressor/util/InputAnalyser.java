@@ -1,4 +1,4 @@
-package pl.allegro.tech.hadoop.compressor;
+package pl.allegro.tech.hadoop.compressor.util;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;

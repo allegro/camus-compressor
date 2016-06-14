@@ -1,4 +1,4 @@
-package pl.allegro.tech.hadoop.compressor;
+package pl.allegro.tech.hadoop.compressor.util;
 
 import com.google.common.collect.Lists;
 
