@@ -2,6 +2,7 @@ package pl.allegro.tech.hadoop.compressor.compression;
 
 import com.hadoop.compression.lzo.LzoIndex;
 import com.hadoop.compression.lzo.LzopCodec;
+import pl.allegro.tech.hadoop.compressor.util.ExtensionAwareAvroOutputFormat;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.GlobFilter;
@@ -28,6 +29,7 @@ class LzoCompression<K, S, V, I extends InputFormat<K, V>, O extends OutputForma
 
     @Override
     protected void setupJobConf(JobConf jobConf) {
+        jobConf.set(ExtensionAwareAvroOutputFormat.EXTENSION_OVERRIDE_KEY, ".lzo");
         jobConf.setBoolean(MAPRED_COMPRESS_KEY, true);
         jobConf.set(COMPRESSION_CODEC_KEY, LzopCodec.class.getName());
         jobConf.set(COMPRESSION_TYPE_KEY, COMPRESSION_TYPE_BLOCK);

@@ -1,7 +1,9 @@
 package pl.allegro.tech.hadoop.compressor.compression;
 
+import pl.allegro.tech.hadoop.compressor.util.ExtensionAwareAvroOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
@@ -36,8 +38,11 @@ class SnappyCompression<K, S, V, I extends InputFormat<K, V>, O extends OutputFo
 
     @Override
     protected void setupJobConf(JobConf jobConf) {
-        jobConf.setBoolean(MAPRED_COMPRESS_KEY, true);
-        jobConf.set(COMPRESSION_CODEC_KEY, SnappyCodec.class.getName());
-        jobConf.set(COMPRESSION_TYPE_KEY, COMPRESSION_TYPE_BLOCK);
+        jobConf.setCompressMapOutput(true);
+        jobConf.set(ExtensionAwareAvroOutputFormat.EXTENSION_OVERRIDE_KEY, ".snappy");
+        jobConf.set("mapred.output.compress", "true");
+        jobConf.setMapOutputCompressorClass(SnappyCodec.class);
+        jobConf.set("mapred.output.compression.codec", SnappyCodec.class.getCanonicalName());
+        jobConf.set("mapred.output.compression.type", SequenceFile.CompressionType.BLOCK.toString());
     }
 }

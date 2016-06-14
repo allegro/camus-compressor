@@ -32,8 +32,8 @@ import static org.junit.Assert.assertEquals;
 @FixMethodOrder(MethodSorters.DEFAULT)
 public class CompressorIntegrationTest {
 
-    private static final String SCHEMAREPO_HOST = "http://localhost:12877/schema-repo";
-    private static final int SCHEMAREPO_PORT = 12877;
+    private static final String SCHEMAREPO_HOST = "http://localhost:2877/schema-repo";
+    private static final int SCHEMAREPO_PORT = 2877;
 
     private static final long UNCOMPRESSED_JSON_SIZE = 34L;
     private static final long COMPRESSED_JSON_SIZE = 105L;
@@ -80,7 +80,7 @@ public class CompressorIntegrationTest {
         stubSchemaRepo(schemaString, "topic2");
 
         // when
-        Compressor.main("all", hdfsURI + "camus_main_avro_dir", "none", "1", "avro", SCHEMAREPO_HOST);
+        Compressor.main("all", hdfsURI + "camus_main_avro_dir", "snappy", "1", "avro", SCHEMAREPO_HOST);
 
         // then
         checkUncompressed(FIRST_AVRO_SIZE, "/camus_main_avro_dir/topic1/daily/" + todayPath + "/file1.avro");

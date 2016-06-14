@@ -1,5 +1,6 @@
 package pl.allegro.tech.hadoop.compressor.compression;
 
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputFormat;

@@ -1,5 +1,6 @@
 package pl.allegro.tech.hadoop.compressor.compression;
 
+import pl.allegro.tech.hadoop.compressor.util.ExtensionAwareAvroOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -26,6 +27,7 @@ class DeflateCompression<K, S, V, I extends InputFormat<K, V>, O extends OutputF
 
     @Override
     protected void setupJobConf(JobConf jobConf) {
+        jobConf.set(ExtensionAwareAvroOutputFormat.EXTENSION_OVERRIDE_KEY, ".deflate");
         jobConf.setBoolean(MAPRED_COMPRESS_KEY, true);
         jobConf.set(COMPRESSION_CODEC_KEY, DeflateCodec.class.getName());
         jobConf.set(COMPRESSION_TYPE_KEY, COMPRESSION_TYPE_BLOCK);

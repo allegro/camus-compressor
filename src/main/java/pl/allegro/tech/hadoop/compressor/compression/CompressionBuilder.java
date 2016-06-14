@@ -2,8 +2,8 @@ package pl.allegro.tech.hadoop.compressor.compression;
 
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroInputFormat;
-import org.apache.avro.mapred.AvroOutputFormat;
 import org.apache.avro.mapred.AvroWrapper;
+import pl.allegro.tech.hadoop.compressor.util.ExtensionAwareAvroOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -27,8 +27,8 @@ public class CompressionBuilder {
     private static final Class<AvroInputFormat<GenericRecord>> avroInputFormat =
             (Class<AvroInputFormat<GenericRecord>>) (Class<?>) AvroInputFormat.class;
     @SuppressWarnings("unchecked")
-    private static final Class<AvroOutputFormat<GenericRecord>> avroOutputFormat =
-            (Class<AvroOutputFormat<GenericRecord>>) (Class<?>) AvroOutputFormat.class;
+    private static final Class<ExtensionAwareAvroOutputFormat<GenericRecord>> avroOutputFormat =
+            (Class<ExtensionAwareAvroOutputFormat<GenericRecord>>) (Class<?>) ExtensionAwareAvroOutputFormat.class;
 
     private static final Class<Text> jsonValueClass = Text.class;
     private static final Class<LongWritable> jsonKeyClass = LongWritable.class;
