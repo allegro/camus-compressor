@@ -51,6 +51,34 @@ public class CompressorIntegrationTest {
     @Rule
     public WireMockRule wireMock = new WireMockRule(SCHEMAREPO_PORT);
 
+    @Before
+    public void setUp() throws IOException {
+        System.setProperty("spark.master", "local");
+        System.setProperty("spark.executor.instances", "1");
+        System.setProperty("spark.driver.allowMultipleContexts", "true");
+        baseDir = Files.createTempDirectory("hdfs").toFile();
+        FileUtil.fullyDelete(baseDir);
+
+        Configuration conf = new Configuration();
+        conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
+        MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
+        hdfsCluster = builder.build();
+        hdfsURI = "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/";
+
+        Iterator<Entry<String, String>> i = conf.iterator();
+        while (i.hasNext()) {
+            Entry<String, String> data = i.next();
+            System.setProperty("spark.hadoop." + data.getKey(), data.getValue());
+        }
+        fileSystem = FileSystemUtils.getFileSystem(conf);
+    }
+
+    @After
+    public void tearDown() {
+        hdfsCluster.shutdown();
+        FileUtil.fullyDelete(baseDir);
+    }
+
     @Test
     public void shouldPerformJsonCompression() throws Exception {
         // given
@@ -92,28 +120,6 @@ public class CompressorIntegrationTest {
         checkCompressed(COMPRESSED_AVRO_SIZE, "/camus_main_avro_dir/topic2/hourly/" + pastDayPath + "/12/*");
     }
 
-    @Before
-    public void setUp() throws IOException {
-        System.setProperty("spark.master", "local");
-        System.setProperty("spark.executor.instances", "1");
-        System.setProperty("spark.driver.allowMultipleContexts", "true");
-        baseDir = Files.createTempDirectory("hdfs").toFile();
-        FileUtil.fullyDelete(baseDir);
-
-        Configuration conf = new Configuration();
-        conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
-        MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
-        hdfsCluster = builder.build();
-        hdfsURI = "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/";
-
-        Iterator<Entry<String, String>> i = conf.iterator();
-        while (i.hasNext()) {
-            Entry<String, String> data = i.next();
-            System.setProperty("spark.hadoop." + data.getKey(), data.getValue());
-        }
-        fileSystem = FileSystemUtils.getFileSystem(conf);
-    }
-
     private void stubSchemaRepo(String schema, String topicName) throws Exception {
         wireMock.stubFor(get(urlPathEqualTo("/schema-repo/" + topicName + "/latest"))
                 .willReturn(aResponse()
@@ -123,12 +129,6 @@ public class CompressorIntegrationTest {
                 .willReturn(aResponse()
                         .withBody("1\t" + schema)
                         .withStatus(200)));
-    }
-
-    @After
-    public void tearDown() {
-        hdfsCluster.shutdown();
-        FileUtil.fullyDelete(baseDir);
     }
 
     private void prepareData() throws Exception {
@@ -195,5 +195,4 @@ public class CompressorIntegrationTest {
     private void checkUncompressed(long size, String path) throws Exception {
         assertEquals(size, fileSystem.globStatus(new Path(path))[0].getLen());
     }
-
 }
