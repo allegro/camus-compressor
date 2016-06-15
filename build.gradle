@@ -136,6 +136,10 @@ debian {
   }
 }
 
+integrationTest {
+    jvmArgs "-XX:MaxPermSize=256m"
+}
+
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
