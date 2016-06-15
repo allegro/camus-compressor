@@ -27,7 +27,7 @@ class DeflateCompression<K, S, V, I extends InputFormat<K, V>, O extends OutputF
 
     @Override
     protected void setupJobConf(JobConf jobConf) {
-        jobConf.set(ExtensionAwareAvroOutputFormat.EXTENSION_OVERRIDE_KEY, ".deflate");
+        jobConf.setBoolean(ExtensionAwareAvroOutputFormat.EXTENSION_FROM_CODEC_KEY, true);
         jobConf.setBoolean(MAPRED_COMPRESS_KEY, true);
         jobConf.set(COMPRESSION_CODEC_KEY, DeflateCodec.class.getName());
         jobConf.set(COMPRESSION_TYPE_KEY, COMPRESSION_TYPE_BLOCK);

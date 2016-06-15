@@ -29,7 +29,7 @@ class LzoCompression<K, S, V, I extends InputFormat<K, V>, O extends OutputForma
 
     @Override
     protected void setupJobConf(JobConf jobConf) {
-        jobConf.set(ExtensionAwareAvroOutputFormat.EXTENSION_OVERRIDE_KEY, ".lzo");
+        jobConf.setBoolean(ExtensionAwareAvroOutputFormat.EXTENSION_FROM_CODEC_KEY, true);
         jobConf.setBoolean(MAPRED_COMPRESS_KEY, true);
         jobConf.set(COMPRESSION_CODEC_KEY, LzopCodec.class.getName());
         jobConf.set(COMPRESSION_TYPE_KEY, COMPRESSION_TYPE_BLOCK);

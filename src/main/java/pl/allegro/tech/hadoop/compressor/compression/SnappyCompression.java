@@ -39,7 +39,7 @@ class SnappyCompression<K, S, V, I extends InputFormat<K, V>, O extends OutputFo
     @Override
     protected void setupJobConf(JobConf jobConf) {
         jobConf.setCompressMapOutput(true);
-        jobConf.set(ExtensionAwareAvroOutputFormat.EXTENSION_OVERRIDE_KEY, ".snappy");
+        jobConf.setBoolean(ExtensionAwareAvroOutputFormat.EXTENSION_FROM_CODEC_KEY, true);
         jobConf.set("mapred.output.compress", "true");
         jobConf.setMapOutputCompressorClass(SnappyCodec.class);
         jobConf.set("mapred.output.compression.codec", SnappyCodec.class.getCanonicalName());
