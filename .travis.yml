@@ -5,7 +5,6 @@ jdk:
   - openjdk7
   - oraclejdk7
   - oraclejdk8
-  - openjdk8
 
 sudo: false
 
