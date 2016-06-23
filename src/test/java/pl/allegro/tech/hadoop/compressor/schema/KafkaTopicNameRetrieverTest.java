@@ -1,5 +1,6 @@
 package pl.allegro.tech.hadoop.compressor.schema;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -7,20 +8,30 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class InputPathToTopicConverterTest {
+public class KafkaTopicNameRetrieverTest {
 
     private final String inputPath;
     private final String expectedTopic;
 
-    private InputPathToTopicConverter converter = new InputPathToTopicConverter();
+    private HashMap<String, String> topicMap = new HashMap<>();
 
-    public InputPathToTopicConverterTest(String inputPath, String expectedTopic) {
+    private KafkaTopicNameRetriever converter = new KafkaTopicNameRetriever(
+            topicMap);
+
+    public KafkaTopicNameRetrieverTest(String inputPath, String expectedTopic) {
         this.inputPath = inputPath;
         this.expectedTopic = expectedTopic;
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        topicMap.put("topic_name", "topic.name");
+        topicMap.put("topic_name_avro", "topic.name_avro");
     }
 
     @Parameters
@@ -32,7 +43,7 @@ public class InputPathToTopicConverterTest {
                 { "/input/path/topic_name/hourly/*/*/*/*.avro",                         "topic.name" },
                 { "/input/path/topic_name/daily/*/*/*/*",                               "topic.name" },
                 { "/input/path/topic_name/hourly/*/*/*/*/*",                            "topic.name" },
-                { "hdfs://zeus/user/piotr.wikiel/topic_name_avro/daily/2015/11/25/*",   "topic.name" }
+                { "hdfs://zeus/user/piotr.wikiel/topic_name_avro/daily/2015/11/25/*",   "topic.name_avro" }
         });
     }
 

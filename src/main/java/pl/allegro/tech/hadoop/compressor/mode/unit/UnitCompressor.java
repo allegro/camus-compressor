@@ -16,10 +16,12 @@ public abstract class UnitCompressor implements Compress {
     protected final FileSystem fileSystem;
 
     protected final InputAnalyser inputAnalyser;
+    private final String workingPath;
 
-    public UnitCompressor(FileSystem fileSystem, InputAnalyser inputAnalyser) {
+    public UnitCompressor(FileSystem fileSystem, InputAnalyser inputAnalyser, String workingPath) {
         this.fileSystem = fileSystem;
         this.inputAnalyser = inputAnalyser;
+        this.workingPath = workingPath;
     }
 
     public void compress(Path unitPath) throws IOException {
@@ -43,8 +45,8 @@ public abstract class UnitCompressor implements Compress {
             }
             long inputSize = inputAnalyser.countInputSize(inputPath);
             logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
-
             String jobGroup = String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize));
+
             repartition(inputPath, outputDir, jobGroup, inputAnalyser.countInputSplits(inputPath));
 
             cleanup(unitPath, outputDir);
@@ -58,7 +60,7 @@ public abstract class UnitCompressor implements Compress {
             throws IOException;
 
     private String getTemporaryDirPath(String hourPath) {
-        return String.format("/tmp/compressor/%s", hourPath.replace(":", "").replace('/', '-'));
+        return String.format(workingPath + "/%s", hourPath.replace(":", "").replace('/', '-'));
     }
 
     private String getSuccessFilePath(String outputDir) {

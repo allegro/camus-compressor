@@ -1,9 +1,9 @@
 package pl.allegro.tech.hadoop.compressor.compression;
 
-import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputFormat;
+import org.apache.log4j.Logger;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 

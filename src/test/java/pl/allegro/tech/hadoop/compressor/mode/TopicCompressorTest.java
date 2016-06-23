@@ -9,9 +9,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import pl.allegro.tech.hadoop.compressor.mode.unit.UnitCompressor;
+import pl.allegro.tech.hadoop.compressor.option.CompressorOptions;
 import pl.allegro.tech.hadoop.compressor.util.TopicDateFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Calendar;
 
 import static java.util.Calendar.DAY_OF_MONTH;
@@ -32,11 +34,15 @@ public class TopicCompressorTest {
     @Mock
     private UnitCompressor unitCompressor;
 
+    @Mock
+    private CompressorOptions options;
+
     private TopicCompressor topicCompressor;
 
     @Before
     public void setUp() {
-        topicCompressor = new TopicCompressor(fileSystem, unitCompressor, new TopicDateFilter(1));
+        when(options.getTopicModePatterns()).thenReturn(Arrays.asList("hourly/*/*/*/*", "daily/*/*/*"));
+        topicCompressor = new TopicCompressor(fileSystem, unitCompressor, new TopicDateFilter(1), options);
     }
 
     @Test

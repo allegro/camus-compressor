@@ -1,7 +1,12 @@
 package pl.allegro.tech.hadoop.compressor;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.palantir.curatortestrule.SharedZooKeeperRule;
+import com.palantir.curatortestrule.ZooKeeperRule;
+import kafka.utils.ZkUtils;
+import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.io.IOUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -10,6 +15,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +46,7 @@ public class CompressorIntegrationTest {
     private static final long FIRST_AVRO_SIZE = 490L;
     private static final long SECOND_AVRO_SIZE = 494L;
     private static final long COMPRESSED_AVRO_SIZE = 527L;
+    private static final String TOPIC_PAYLOAD = "{\"version\":1,\"partitions\":{\"0\":[114,224]}}";
 
     private File baseDir;
     private String hdfsURI;
@@ -48,14 +55,41 @@ public class CompressorIntegrationTest {
     private String todayPath;
     private String pastDayPath;
 
+    @ClassRule
+    public static ZooKeeperRule sharedZookeeper = new SharedZooKeeperRule();
+
     @Rule
     public WireMockRule wireMock = new WireMockRule(SCHEMAREPO_PORT);
+    private CuratorFramework zookeeper;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUpZookeeper() throws Exception {
+        zookeeper = sharedZookeeper.getClient();
+        final ZkClient zkClient = new ZkClient(zookeeper.getZookeeperClient().getCurrentConnectionString());
+        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic1_avro", TOPIC_PAYLOAD);
+        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic2_avro", TOPIC_PAYLOAD);
+        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic1", TOPIC_PAYLOAD);
+        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic2", TOPIC_PAYLOAD);
+    }
+
+    @Before
+    public void setUp() throws Exception {
         System.setProperty("spark.master", "local");
-        System.setProperty("spark.executor.instances", "1");
         System.setProperty("spark.driver.allowMultipleContexts", "true");
+        System.setProperty("spark.executor.instances", "1");
+        System.setProperty("spark.compressor.avro.schema.repository.class",
+                "pl.allegro.tech.hadoop.compressor.schema.SchemaRepoSchemaRepository");
+        System.setProperty("spark.compressor.processing.topic-name-retriever.class",
+                "pl.allegro.tech.hadoop.compressor.schema.KafkaTopicNameRetriever");
+        System.setProperty("spark.compressor.processing.mode", "all");
+        System.setProperty("spark.compressor.output.compression", "none");
+        System.setProperty("spark.compressor.avro.schema.repository.url", SCHEMAREPO_HOST);
+        System.setProperty("spark.compressor.processing.delay", "1");
+        System.setProperty("spark.compressor.processing.mode.all.excludes", "base,history,integration");
+        System.setProperty("spark.compressor.processing.mode.topic.pattern", "daily/*/*/*,hourly/*/*/*/*");
+        System.setProperty("spark.compressor.processing.delay", "1");
+        System.setProperty("spark.compressor.zookeeper.paths",
+                zookeeper.getZookeeperClient().getCurrentConnectionString());
         baseDir = Files.createTempDirectory("hdfs").toFile();
         FileUtil.fullyDelete(baseDir);
 
@@ -74,7 +108,7 @@ public class CompressorIntegrationTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         hdfsCluster.shutdown();
         FileUtil.fullyDelete(baseDir);
     }
@@ -82,10 +116,12 @@ public class CompressorIntegrationTest {
     @Test
     public void shouldPerformJsonCompression() throws Exception {
         // given
+        System.setProperty("spark.compressor.input.format", "json");
+        System.setProperty("spark.compressor.input.path", "/camus_main_dir");
         prepareData();
 
         // when
-        Compressor.main("all", hdfsURI + "camus_main_dir", "none", "1", "json", "none");
+        Compressor.main();
 
         // then
         checkUncompressed("/camus_main_dir/topic1/daily/" + todayPath + "/file1");
@@ -102,13 +138,15 @@ public class CompressorIntegrationTest {
     @Test
     public void shouldPerformAvroCompression() throws Exception {
         // given
+        System.setProperty("spark.compressor.input.format", "avro");
+        System.setProperty("spark.compressor.input.path", "/camus_main_avro_dir");
         prepareAvroData();
         final String schemaString = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("twitter.avsc"));
         stubSchemaRepo(schemaString, "topic1");
         stubSchemaRepo(schemaString, "topic2");
 
         // when
-        Compressor.main("all", hdfsURI + "camus_main_avro_dir", "none", "1", "avro", SCHEMAREPO_HOST);
+        Compressor.main();
 
         // then
         checkUncompressed(FIRST_AVRO_SIZE, "/camus_main_avro_dir/topic1/daily/" + todayPath + "/file1.avro");

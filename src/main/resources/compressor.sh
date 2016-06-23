@@ -30,22 +30,22 @@ while getopts ":q:e:c:m:d:p:s:f:" opt; do
       EXECUTORS=$OPTARG
       ;;
     c)
-      COMPRESSION=$OPTARG
+      COMPRESSION="$OPTARG"
       ;;
     m)
-      MODE=$OPTARG
+      MODE="$OPTARG"
       ;;
     d)
-      DELAY=$OPTARG
+      DELAY="$OPTARG"
       ;;
     p)
-      INPUTPATH=$OPTARG
+      INPUTPATH="$OPTARG"
       ;;
     s)
       SCHEMAREPOSITORYURL="$OPTARG"
       ;;
     f)
-      FORMAT=$OPTARG
+      FORMAT="$OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG"
@@ -69,7 +69,7 @@ if [ "$MODE" = "" -o "$INPUTPATH" = "" ]; then
 fi
 
 if [ "$FORMAT" == "avro" -a "$SCHEMAREPOSITORYURL" == "" ]; then
-    echo "Please provide -s http://schema.repository.url/"
+    echo "Please provide -s http://schema.repository.url/schema-repo"
     usage
 fi
 
@@ -77,4 +77,9 @@ spark-submit1.6 --class pl.allegro.tech.hadoop.compressor.Compressor \
   --queue $QUEUE \
   --master yarn-cluster \
   --num-executors $EXECUTORS \
-  /usr/lib/hadoop-tools/camus-compressor/compressor.jar $MODE $INPUTPATH $COMPRESSION $DELAY $FORMAT $SCHEMAREPOSITORYURL
+  --conf spark.compressor.input.format="$FORMAT" \
+  --conf spark.compressor.output.compression="$COMPRESSION" \
+  --conf spark.compressor.avro.schema.repository.url="$SCHEMAREPOSITORYURL" \
+  --conf spark.compressor.input.path="$INPUTPATH" \
+  --conf spark.compressor.processing.delay="$DELAY" \
+  /usr/lib/hadoop-tools/camus-compressor/compressor.jar

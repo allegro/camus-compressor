@@ -20,9 +20,10 @@ public class JsonUnitCompressor extends UnitCompressor {
     private final Compression<LongWritable, NullWritable, Text> compression;
 
     public JsonUnitCompressor(JavaSparkContext context, FileSystem fileSystem,
+                              String workingPath,
                               Compression<LongWritable, NullWritable, Text> compression, InputAnalyser inputAnalyser) {
 
-        super(fileSystem, inputAnalyser);
+        super(fileSystem, inputAnalyser, workingPath);
         this.compression = compression;
         this.context = context;
     }

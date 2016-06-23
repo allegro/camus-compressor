@@ -4,10 +4,10 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
+import pl.allegro.tech.hadoop.compressor.option.CompressorOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -19,22 +19,24 @@ public class CamusCompressor implements Compress {
     private static final int COMPRESSOR_TIMEOUT_DAYS = 10;
     private FileSystem fileSystem;
     private TopicCompressor topicCompressor;
-    static final List<String> EXCLUDES = Collections.unmodifiableList(Arrays.asList("base", "history", "tables"));
+
+    final List<String> excludes;
 
     private Logger logger = Logger.getLogger(CamusCompressor.class);
     private ExecutorService executor;
 
-    public CamusCompressor(FileSystem fileSystem, TopicCompressor topicCompressor, int numOfExecutors) {
+    public CamusCompressor(FileSystem fileSystem, TopicCompressor topicCompressor, int numOfExecutors, CompressorOptions options) {
         this.fileSystem = fileSystem;
         this.topicCompressor = topicCompressor;
         executor = Executors.newFixedThreadPool(numOfExecutors);
+        excludes = Collections.unmodifiableList(options.getAllModeExcludes());
     }
 
     public List<Path> getTopicDirs(Path camusDir) throws IOException {
         List<Path> paths = new ArrayList<>();
         final FileStatus[] fileStatuses = fileSystem.listStatus(camusDir);
         for (FileStatus fileStatus : fileStatuses) {
-            if (EXCLUDES.contains(fileStatus.getPath().getName())) {
+            if (excludes.contains(fileStatus.getPath().getName())) {
                 continue;
             }
             paths.add(fileStatus.getPath());
@@ -64,7 +66,7 @@ public class CamusCompressor implements Compress {
                 try {
                     topicCompressor.compress(topicDir);
                 } catch (IOException e) {
-                    logger.error("Exception occured on compressing " + topicDir, e);
+                    logger.error("Exception occurred on compressing " + topicDir, e);
                 }
             }
         };
