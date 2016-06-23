@@ -21,6 +21,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
+import pl.allegro.tech.hadoop.compressor.option.FilesFormat;
 import pl.allegro.tech.hadoop.compressor.util.InputAnalyser;
 
 import java.io.IOException;
@@ -61,7 +62,7 @@ public class JsonUnitCompressorTest {
 
     @Before
     public void setUp() throws Exception {
-        InputAnalyser analyser = new InputAnalyser(fileSystem, compression, false);
+        InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, compression, false);
         unitCompressor = new JsonUnitCompressor(sparkContext, fileSystem, WORKING_PATH, compression, analyser);
         when(compression.openUncompressed(anyString())).thenReturn(testRDD);
         when(testRDD.mapToPair(any(PairFunction.class))).thenReturn(saveTestRDD);

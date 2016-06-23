@@ -166,7 +166,7 @@ public class ExtensionAwareAvroOutputFormat<T> extends AvroOutputFormat<T> {
         if (job.getBoolean(EXTENSION_FROM_CODEC_KEY, false)) {
             final Class<? extends CompressionCodec> codecClass = getOutputCompressorClass(job, GzipCodec.class);
             final CompressionCodec codec = ReflectionUtils.newInstance(codecClass, job);
-            ext = codec.getDefaultExtension();
+            ext = codec.getDefaultExtension() + EXT;
         }
         return ext;
     }

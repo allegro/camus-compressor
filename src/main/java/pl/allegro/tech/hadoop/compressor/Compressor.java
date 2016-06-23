@@ -151,7 +151,8 @@ public final class Compressor {
     }
 
     private static InputAnalyser createInputAnalyser(Compression<?, ?, ?> compression) {
-        return new InputAnalyser(fileSystem, compression, compressorOptions.isForceSplit());
+        return new InputAnalyser(fileSystem, compressorOptions.getFormat(), compression,
+                compressorOptions.isForceSplit());
     }
 
     private static Compression<LongWritable, NullWritable, Text> getJsonCompression() {
