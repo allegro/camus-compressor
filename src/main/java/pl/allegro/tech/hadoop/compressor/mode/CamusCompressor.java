@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CamusCompressor implements Compress {
 
-    private static final int COMPRESSOR_TIMEOUT_DAYS = 10;
+    private final long timeout;
     private FileSystem fileSystem;
     private TopicCompressor topicCompressor;
 
@@ -29,6 +29,7 @@ public class CamusCompressor implements Compress {
         this.fileSystem = fileSystem;
         this.topicCompressor = topicCompressor;
         executor = Executors.newFixedThreadPool(numOfExecutors);
+        timeout = options.getAllModeTimeout();
         excludes = Collections.unmodifiableList(options.getAllModeExcludes());
     }
 
@@ -52,7 +53,7 @@ public class CamusCompressor implements Compress {
         }
         executor.shutdown();
         try {
-            executor.awaitTermination(COMPRESSOR_TIMEOUT_DAYS, TimeUnit.DAYS);
+            executor.awaitTermination(timeout, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             logger.error("Executor interrupted");
         }

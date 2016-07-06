@@ -2,26 +2,29 @@
 
 # defaults
 QUEUE="default"
+PROPERTIES_FILE='/etc/camus-compressor/camus-compressor.properties'
 EXECUTORS=2
-DELAY=2
-COMPRESSION="snappy"
-FORMAT="json"
-SCHEMAREPOSITORYURL=""
+SPARK_MASTER='yarn-cluster'
+SPARK_CONFIG=""
 
 function usage {
-  echo "Usage: compressor.sh [-c compression_format] [-e number_of_executors] [-q yarn_queue_name] [-f format=json] -m mode -d delay_in_days -p path"
-  echo "  Mode can be either all, topic or unit"
-  echo "  Compression format can be either snappy, lzo or none"
-  echo "  Default compression format is snappy"
+  echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
   echo "  Default queue is \"default\""
   echo "  Default number of executors is 2"
-  echo "  Default number of days for compression delay is 2"
-  echo "  Default format is \"json\". Another available option is \"avro\""
-  echo "  When format==\"avro\" then you must provide URL to the instance of schema-repo (http://github.com/schema-repo/schema-repo)"
+  echo "  Conf is passed as --conf to spark-submit, so you can use it multiple times:"
+  echo "     - SPARK_SUBMIT=/usr/bin/spark-submit ./compressor.sh -c spark.executor.instances=10 -c spark.executor.memory=4g ..."
+  echo "     - SPARK_SUBMIT=/usr/bin/spark-submit ./compressor.sh -c \"spark.executor.extraJavaOptions=-XX:+PrintGCDetails -XX:+PrintGCTimeStamps\" ..."
+  echo "  Note that Camus Compressor requires Spark 1.6."
+  echo "  You can set SPARK_SUBMIT as an environment variable: export SPARK_SUBMIT=/usr/bin/spark-submit. "
+  echo "  If it is not set, /usr/bin/spark-submit1.6 is used."
   exit 1
 }
 
-while getopts ":q:e:c:m:d:p:s:f:" opt; do
+if [ "$SPARK_SUBMIT" == "" ]; then
+    SPARK_SUBMIT="/usr/bin/spark-submit1.6"
+fi
+
+while getopts ":q:e:P:c:m:" opt; do
   case $opt in
     q)
       QUEUE=$OPTARG
@@ -29,23 +32,14 @@ while getopts ":q:e:c:m:d:p:s:f:" opt; do
     e)
       EXECUTORS=$OPTARG
       ;;
-    c)
-      COMPRESSION="$OPTARG"
+    P)
+      PROPERTIES_FILE="$OPTARG"
       ;;
     m)
-      MODE="$OPTARG"
+      SPARK_MASTER="$OPTARG"
       ;;
-    d)
-      DELAY="$OPTARG"
-      ;;
-    p)
-      INPUTPATH="$OPTARG"
-      ;;
-    s)
-      SCHEMAREPOSITORYURL="$OPTARG"
-      ;;
-    f)
-      FORMAT="$OPTARG"
+    c)
+      SPARK_CONFIG="$SPARK_CONFIG --conf \"$OPTARG\""
       ;;
     \?)
       echo "Invalid option: -$OPTARG"
@@ -58,28 +52,16 @@ while getopts ":q:e:c:m:d:p:s:f:" opt; do
   esac
 done
 
-if [ "$FORMAT" != "json" -a "$FORMAT" != "avro" ]; then
-    echo "Invalid option format: $FORMAT"
+if [ ! -f "$PROPERTIES_FILE" ]; then
+    "$PROPERTIES_FILE is not a regular file and cannot be used as Camus-compressor configuration"
     usage
+    exit 1
 fi
 
-if [ "$MODE" = "" -o "$INPUTPATH" = "" ]; then
-  echo "Mode and path are required."
-  usage
-fi
-
-if [ "$FORMAT" == "avro" -a "$SCHEMAREPOSITORYURL" == "" ]; then
-    echo "Please provide -s http://schema.repository.url/schema-repo"
-    usage
-fi
-
-spark-submit1.6 --class pl.allegro.tech.hadoop.compressor.Compressor \
+$SPARK_SUBMIT --properties-file $PROPERTIES_FILE \
+  --class pl.allegro.tech.hadoop.compressor.Compressor \
   --queue $QUEUE \
-  --master yarn-cluster \
+  --master "$SPARK_MASTER" \
   --num-executors $EXECUTORS \
-  --conf spark.compressor.input.format="$FORMAT" \
-  --conf spark.compressor.output.compression="$COMPRESSION" \
-  --conf spark.compressor.avro.schema.repository.url="$SCHEMAREPOSITORYURL" \
-  --conf spark.compressor.input.path="$INPUTPATH" \
-  --conf spark.compressor.processing.delay="$DELAY" \
+  $SPARK_CONFIG \
   /usr/lib/hadoop-tools/camus-compressor/compressor.jar

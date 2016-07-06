@@ -24,6 +24,7 @@ public class CompressorOptions implements Serializable {
     private final boolean forceSplit;
     private final String zookeeper;
     private final String workingDir;
+    private final long allModeTimeout;
     private Class<? extends SchemaRepository> schemaRepositoryClass;
     private Class<? extends TopicNameRetriever> topicNameRetrieverClass;
     private final List<String> allModeExcludes;
@@ -38,10 +39,11 @@ public class CompressorOptions implements Serializable {
         format = FilesFormat.fromString(sparkConf.get("spark.compressor.input.format", "json"));
         schemaRepositoryUrl = sparkConf.get("spark.compressor.avro.schema.repository.url");
         forceSplit = sparkConf.getBoolean("spark.compressor.processing.force", false);
-        zookeeper = sparkConf.get("spark.compressor.zookeeper.paths");
+        zookeeper = sparkConf.get("spark.compressor.zookeeper.paths", "");
         workingDir = sparkConf.get("spark.compressor.processing.working.dir", "/tmp/compressor");
         allModeExcludes = Arrays.asList(sparkConf.get("spark.compressor.processing.mode.all.excludes").split(","));
         topicModePatterns = Arrays.asList(sparkConf.get("spark.compressor.processing.mode.topic.pattern").split(","));
+        allModeTimeout = sparkConf.getLong("spark.compressor.processing.mode.all.timeout.minutes", 1440L);
         try {
             schemaRepositoryClass = (Class<SchemaRepository>)ClassUtils.getClass(
                     sparkConf.get("spark.compressor.avro.schema.repository.class",
@@ -92,6 +94,10 @@ public class CompressorOptions implements Serializable {
 
     public String getWorkingDir() {
         return workingDir;
+    }
+
+    public long getAllModeTimeout() {
+        return allModeTimeout;
     }
 
     public Class<? extends SchemaRepository> getSchemaRepositoryClass() {

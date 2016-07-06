@@ -43,6 +43,7 @@ import java.util.Map;
 public final class Compressor {
 
     public static final Logger logger = Logger.getLogger(Compressor.class);
+    public static final int DEFAULT_EXECUTOR_INSTANCES = 10;
 
     private static FileSystem fileSystem;
     private static JavaSparkContext sparkContext;
@@ -76,7 +77,7 @@ public final class Compressor {
         final UnitCompressor unitCompressor = createUnitCompressor();
         final TopicCompressor topicCompressor = new TopicCompressor(fileSystem, unitCompressor, topicFilter, compressorOptions);
         final CamusCompressor camusCompressor = new CamusCompressor(fileSystem, topicCompressor,
-                Integer.valueOf(sparkConf.get("spark.executor.instances")), compressorOptions);
+                sparkConf.getInt("spark.executor.instances", DEFAULT_EXECUTOR_INSTANCES), compressorOptions);
 
         final EnumMap<CompressorOptions.Mode, Compress> compressors = new EnumMap<>(CompressorOptions.Mode.class);
         compressors.put(CompressorOptions.Mode.ALL, camusCompressor);
@@ -135,6 +136,10 @@ public final class Compressor {
     }
 
     private static Map<String, String> getInputPathToTopicMap() {
+
+        if (compressorOptions.getTopicNameRetrieverClass().equals(IdentityTopicNameRetriever.class)) {
+            return new HashMap<>();
+        }
 
         ZkClient zkClient = new ZkClient(compressorOptions.getZookeeperHosts());
         final List<String> topics = new TopicRepository(zkClient).topicNames();
