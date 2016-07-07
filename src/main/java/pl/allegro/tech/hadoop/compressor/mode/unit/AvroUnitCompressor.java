@@ -27,7 +27,8 @@ public class AvroUnitCompressor extends UnitCompressor {
 
     public AvroUnitCompressor(JavaSparkContext sparkContext, FileSystem fileSystem, InputAnalyser inputAnalyser,
                               String workingPath,
-                              SchemaRepository schemaRepository, Compression<AvroWrapper<GenericRecord>, AvroWrapper<GenericRecord>, NullWritable> compression) {
+                              SchemaRepository schemaRepository,
+                              Compression<AvroWrapper<GenericRecord>, AvroWrapper<GenericRecord>, NullWritable> compression) {
 
         super(fileSystem, inputAnalyser, workingPath);
         this.sparkContext = sparkContext;
