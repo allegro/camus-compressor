@@ -68,6 +68,9 @@ In a configuration file (`/etc/camus-compressor/camus-compressor.properties`) yo
  * `spark.compressor.processing.force` - by default Camus Compressor doesn't compress directories again. Set this 
    option to `true` to force recompression. 
  * `spark.compressor.processing.working.dir` - directory where temprary files will be stored.
+ * `spark.compressor.processing.calculate.counts` - if set to `true`, Compressor will calculate counts for every unit
+   (i.e. partition) before and after compression. If they are not equal, it will throws an exception and leaves
+   compressed files in `working.dir`.
  * `spark.executors.instances` - number of topics concurrently processed.
  
 ## How to build

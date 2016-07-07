@@ -4,6 +4,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
+import pl.allegro.tech.hadoop.compressor.compression.Compression;
+import pl.allegro.tech.hadoop.compressor.exception.InvalidCountsException;
 import pl.allegro.tech.hadoop.compressor.mode.Compress;
 import pl.allegro.tech.hadoop.compressor.util.InputAnalyser;
 
@@ -17,11 +19,13 @@ public abstract class UnitCompressor implements Compress {
 
     protected final InputAnalyser inputAnalyser;
     private final String workingPath;
+    private final boolean calcCounts;
 
-    public UnitCompressor(FileSystem fileSystem, InputAnalyser inputAnalyser, String workingPath) {
+    public UnitCompressor(FileSystem fileSystem, InputAnalyser inputAnalyser, String workingPath, boolean calcCounts) {
         this.fileSystem = fileSystem;
         this.inputAnalyser = inputAnalyser;
         this.workingPath = workingPath;
+        this.calcCounts = calcCounts;
     }
 
     public void compress(Path unitPath) throws IOException {
@@ -47,7 +51,14 @@ public abstract class UnitCompressor implements Compress {
             logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
             String jobGroup = String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize));
 
+            long beforeCount = countIfRequested(inputPath);
             repartition(inputPath, outputDir, jobGroup, inputAnalyser.countInputSplits(inputPath));
+            long afterCount = countIfRequested(inputPath);
+
+            if (beforeCount != afterCount) {
+                throw new InvalidCountsException("Counts are different before and after compression.",
+                        beforeCount, afterCount);
+            }
 
             cleanup(unitPath, outputDir);
         } else {
@@ -55,6 +66,16 @@ public abstract class UnitCompressor implements Compress {
         }
 
     }
+
+    private long countIfRequested(String inputPath) throws IOException {
+        if (calcCounts) {
+            return count(inputPath);
+        } else {
+            return -1L;
+        }
+    }
+
+    protected abstract long count(String inputPath) throws IOException;
 
     protected abstract void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)
             throws IOException;

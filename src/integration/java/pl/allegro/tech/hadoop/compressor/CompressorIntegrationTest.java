@@ -88,6 +88,7 @@ public class CompressorIntegrationTest {
         System.setProperty("spark.compressor.processing.mode.all.excludes", "base,history,integration");
         System.setProperty("spark.compressor.processing.mode.topic.pattern", "daily/*/*/*,hourly/*/*/*/*");
         System.setProperty("spark.compressor.processing.delay", "1");
+        System.setProperty("spark.compressor.processing.calculate.counts", "false");
         System.setProperty("spark.compressor.zookeeper.paths",
                 zookeeper.getZookeeperClient().getCurrentConnectionString());
         baseDir = Files.createTempDirectory("hdfs").toFile();

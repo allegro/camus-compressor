@@ -9,6 +9,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Logger;
+import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
@@ -28,12 +29,26 @@ public class AvroUnitCompressor extends UnitCompressor {
     public AvroUnitCompressor(JavaSparkContext sparkContext, FileSystem fileSystem, InputAnalyser inputAnalyser,
                               String workingPath,
                               SchemaRepository schemaRepository,
-                              Compression<AvroWrapper<GenericRecord>, AvroWrapper<GenericRecord>, NullWritable> compression) {
+                              Compression<AvroWrapper<GenericRecord>, AvroWrapper<GenericRecord>, NullWritable> compression,
+                              boolean calculateCounts) {
 
-        super(fileSystem, inputAnalyser, workingPath);
+        super(fileSystem, inputAnalyser, workingPath, calculateCounts);
         this.sparkContext = sparkContext;
         this.schemaRepository = schemaRepository;
         this.compression = compression;
+    }
+
+    @Override
+    protected long count(String inputPath) throws IOException {
+        final JobConf jobConf = new JobConf(sparkContext.hadoopConfiguration());
+        final Schema schema = schemaRepository.findLatestSchema(inputPath);
+
+        AvroJob.setOutputSchema(jobConf, schema);
+        FileInputFormat.setInputPaths(jobConf, inputPath);
+
+        return compression
+                .openUncompressed(jobConf)
+                .count();
     }
 
     @Override

@@ -29,6 +29,7 @@ public class CompressorOptions implements Serializable {
     private Class<? extends TopicNameRetriever> topicNameRetrieverClass;
     private final List<String> allModeExcludes;
     private final List<String> topicModePatterns;
+    private boolean calculateCounts;
 
     @SuppressWarnings("unchecked")
     public CompressorOptions(SparkConf sparkConf) {
@@ -44,6 +45,7 @@ public class CompressorOptions implements Serializable {
         allModeExcludes = Arrays.asList(sparkConf.get("spark.compressor.processing.mode.all.excludes").split(","));
         topicModePatterns = Arrays.asList(sparkConf.get("spark.compressor.processing.mode.topic.pattern").split(","));
         allModeTimeout = sparkConf.getLong("spark.compressor.processing.mode.all.timeout.minutes", 1440L);
+        calculateCounts = sparkConf.getBoolean("spark.compressor.processing.calculate.counts", true);
         try {
             schemaRepositoryClass = (Class<SchemaRepository>)ClassUtils.getClass(
                     sparkConf.get("spark.compressor.avro.schema.repository.class",
@@ -114,6 +116,10 @@ public class CompressorOptions implements Serializable {
 
     public List<String> getTopicModePatterns() {
         return topicModePatterns;
+    }
+
+    public boolean isCalculateCounts() {
+        return calculateCounts;
     }
 
     @Override

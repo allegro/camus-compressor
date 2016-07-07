@@ -21,12 +21,14 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
+import pl.allegro.tech.hadoop.compressor.exception.InvalidCountsException;
 import pl.allegro.tech.hadoop.compressor.option.FilesFormat;
 import pl.allegro.tech.hadoop.compressor.util.InputAnalyser;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -35,6 +37,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static pl.allegro.tech.hadoop.compressor.Utils.fileStatusForEmptyFile;
@@ -63,8 +66,9 @@ public class JsonUnitCompressorTest {
     @Before
     public void setUp() throws Exception {
         InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, compression, false);
-        unitCompressor = new JsonUnitCompressor(sparkContext, fileSystem, WORKING_PATH, compression, analyser);
+        unitCompressor = new JsonUnitCompressor(sparkContext, fileSystem, WORKING_PATH, compression, analyser, true);
         when(compression.openUncompressed(anyString())).thenReturn(testRDD);
+        when(testRDD.count()).thenReturn(10L);
         when(testRDD.mapToPair(any(PairFunction.class))).thenReturn(saveTestRDD);
         when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration());
     }
@@ -111,6 +115,28 @@ public class JsonUnitCompressorTest {
         verify(compression).compress(same(saveTestRDD), anyString(), any(JobConf.class));
         verifyCleanup();
         verify(fileSystem).delete(not(eq(UNIT_PATH)), eq(true));
+    }
+
+    @Test
+    public void shouldNotCleanUpWhenCountsAreDifferent() throws Exception {
+        // given
+        when(testRDD.count()).thenReturn(10L, 9L);
+        when(sparkContext.hadoopFile(eq(UNIT_PATH_NAME), eq(TextInputFormat.class),
+                eq(LongWritable.class), eq(Text.class))).thenReturn(testRDD);
+        when(testRDD.repartition(anyInt())).thenReturn(testRDD);
+        when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
+        when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
+        when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
+
+        // when
+        try {
+            unitCompressor.compress(UNIT_PATH);
+            fail("Should fail with an InvalidCountsException");
+        } catch (InvalidCountsException e) {
+
+            //then
+            verifyNotCleaningUp();
+        }
     }
 
     @Test
@@ -172,10 +198,25 @@ public class JsonUnitCompressorTest {
     }
 
     private void verifyCleanup() throws IOException {
-        verify(fileSystem).delete(eq(UNIT_PATH), eq(true));
+        verifyFinalizationInteractions(1);
         ArgumentCaptor<Path> pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(fileSystem).delete(pathCaptor.capture(), eq(false));
         assertTrue(isSuccessFile(pathCaptor.getValue()));
+    }
+
+    private void verifyNotCleaningUp() throws IOException {
+        verifyFinalizationInteractions(0);
+    }
+
+    private void verifyFinalizationInteractions(int invocations) throws IOException {
+        verify(fileSystem, times(invocations)).delete(eq(UNIT_PATH), eq(true));
+        final ArgumentCaptor<Path> fromPathCaptor = ArgumentCaptor.forClass(Path.class);
+        final ArgumentCaptor<Path> toPathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(fileSystem, times(invocations)).rename(fromPathCaptor.capture(), toPathCaptor.capture());
+        if (invocations > 0) {
+            assertTrue(fromPathCaptor.getValue().toString().contains(WORKING_PATH));
+            assertTrue(toPathCaptor.getValue().toString().contains(UNIT_PATH.toString()));
+        }
     }
 
     private boolean isSuccessFile(Path path) {

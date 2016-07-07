@@ -21,9 +21,10 @@ public class JsonUnitCompressor extends UnitCompressor {
 
     public JsonUnitCompressor(JavaSparkContext context, FileSystem fileSystem,
                               String workingPath,
-                              Compression<LongWritable, NullWritable, Text> compression, InputAnalyser inputAnalyser) {
+                              Compression<LongWritable, NullWritable, Text> compression, InputAnalyser inputAnalyser,
+                              boolean calculateCounts) {
 
-        super(fileSystem, inputAnalyser, workingPath);
+        super(fileSystem, inputAnalyser, workingPath, calculateCounts);
         this.compression = compression;
         this.context = context;
     }
@@ -39,6 +40,11 @@ public class JsonUnitCompressor extends UnitCompressor {
         JobConf jobConf = new JobConf(context.hadoopConfiguration());
         context.setJobGroup("compression", jobGroup);
         compression.compress(rdd, outputDir, jobConf);
+    }
+
+    @Override
+    protected long count(String inputPath) throws IOException {
+        return compression.openUncompressed(inputPath).count();
     }
 
     private static class RemoveKeyFunction implements PairFunction<Tuple2<LongWritable, Text>, NullWritable, Text> {
