@@ -1,9 +1,7 @@
 package pl.allegro.tech.hadoop.compressor.compression;
 
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.AvroInputFormat;
 import org.apache.avro.mapred.AvroWrapper;
-import pl.allegro.tech.hadoop.compressor.util.ExtensionAwareAvroOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -11,7 +9,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.spark.api.java.JavaSparkContext;
+import pl.allegro.tech.hadoop.compressor.AvroInputFormatWithReaderSchema;
 import pl.allegro.tech.hadoop.compressor.option.CompressionFormat;
+import pl.allegro.tech.hadoop.compressor.util.ExtensionAwareAvroOutputFormat;
 
 public class CompressionBuilder {
 
@@ -24,8 +24,8 @@ public class CompressionBuilder {
     private static final  Class<AvroWrapper<GenericRecord>> avroKeyClass =
             (Class<AvroWrapper<GenericRecord>>) (Class<?>) AvroWrapper.class;
     @SuppressWarnings("unchecked")
-    private static final Class<AvroInputFormat<GenericRecord>> avroInputFormat =
-            (Class<AvroInputFormat<GenericRecord>>) (Class<?>) AvroInputFormat.class;
+    private static final Class<AvroInputFormatWithReaderSchema<GenericRecord>> avroInputFormat =
+            (Class<AvroInputFormatWithReaderSchema<GenericRecord>>) (Class<?>) AvroInputFormatWithReaderSchema.class;
     @SuppressWarnings("unchecked")
     private static final Class<ExtensionAwareAvroOutputFormat<GenericRecord>> avroOutputFormat =
             (Class<ExtensionAwareAvroOutputFormat<GenericRecord>>) (Class<?>) ExtensionAwareAvroOutputFormat.class;

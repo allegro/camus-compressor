@@ -13,6 +13,8 @@ public interface Compression<K, S, V> {
 
     JavaPairRDD<K, V> openUncompressed(String inputPath) throws IOException;
 
+    JavaPairRDD<K, V> openUncompressed(JobConf jobConf) throws IOException;
+
     int getSplits(long size);
 
     String getExtension();

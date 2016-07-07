@@ -3,7 +3,6 @@ package pl.allegro.tech.hadoop.compressor.compression;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputFormat;
-import org.apache.log4j.Logger;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
@@ -50,6 +49,11 @@ public abstract class AbstractCompression<K, S, V, I extends InputFormat<K, V>, 
     @Override
     public JavaPairRDD<K, V> openUncompressed(String inputPath) throws IOException {
         return sparkContext.hadoopFile(inputPath, iClass, kClass, vClass);
+    }
+
+    @Override
+    public JavaPairRDD<K, V> openUncompressed(JobConf jobConf) throws IOException {
+        return sparkContext.hadoopRDD(jobConf, iClass, kClass, vClass);
     }
 
     protected void setupJobConf(JobConf jobConf) {
