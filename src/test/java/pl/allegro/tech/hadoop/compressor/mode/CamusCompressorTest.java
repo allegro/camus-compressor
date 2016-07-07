@@ -35,6 +35,7 @@ public class CamusCompressorTest {
     @Before
     public void setUp() throws Exception {
         when(options.getAllModeExcludes()).thenReturn(Arrays.asList("integration", "history", "base"));
+        when(options.getAllModeTimeout()).thenReturn(1440L);
         camusCompressor = new CamusCompressor(fileSystem, topicCompressor, 1, options);
     }
 
