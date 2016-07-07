@@ -5,14 +5,15 @@ buildscript {
         maven { url 'http://repo.spring.io/plugins-release' }
     }
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.1.1'
-        classpath 'de.gesellix:gradle-debian-plugin:14'
-        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
+        classpath group: 'com.github.jengelman.gradle.plugins', name: 'shadow',                 version: '1.2.3'
+        classpath group: 'de.gesellix',                         name: 'gradle-debian-plugin',   version: '14'
+        classpath group: 'org.springframework.build.gradle',    name: 'propdeps-plugin',        version: '0.0.7'
     }
 }
 
 plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.2.3'
+    id 'pl.allegro.tech.build.axion-release'        version '1.2.3'
+    id 'com.ewerk.gradle.plugins.integration-test'  version '1.0.8'
 }
 
 apply plugin: 'java'
@@ -24,16 +25,9 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'propdeps'
 apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
+apply plugin: 'pkg-debian'
 
-
-/***** shadowJar *****/
-shadowJar {
-    mergeServiceFiles()
-    exclude 'META-INF/*.DSA'
-    exclude 'META-INF/*.RSA'
-}
-
-sourceCompatibility = 1.7
+/***** basics *****/
 
 project.group = 'pl.allegro.tech.hadoop'
 scmVersion {
@@ -42,55 +36,76 @@ scmVersion {
     }
 }
 project.version = scmVersion.version
-mainClassName = 'pl.allegro.tech.hadoop.compressor.Compressor'
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.3'
-}
+mainClassName = 'pl.allegro.tech.hadoop.compressor.Compressor'
+sourceCompatibility = JavaVersion.VERSION_1_7
 
 /***** dependencies *****/
 
 repositories {
     mavenCentral()
-    maven {
-        url "http://typesafe.artifactoryonline.com/typesafe/twitter-cache"
-    }
-    maven {
-        url "https://repository.cloudera.com/artifactory/cloudera-repos/"
-    }
-    maven {
-        url "http://maven.twttr.com"
-    }
+    maven { url 'http://typesafe.artifactoryonline.com/typesafe/twitter-cache' }
+    maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos/' }
+    maven { url 'http://maven.twttr.com' }
 }
-dependencies {
-    provided ('org.apache.spark:spark-core_2.10:1.2.0')
-    provided 'org.scala-lang:scala-library:2.10.2'
-    provided ('org.apache.hadoop:hadoop-hdfs:2.5.0') {
-        exclude group: 'javax.servlet'
-    }
-    
-    compile 'com.hadoop.gplcompression:hadoop-lzo:0.4.19'
-    
-    testCompile 'org.mockito:mockito-all:1.9.5'
-    testCompile 'junit:junit:4.11'
-	testCompile ('org.apache.hadoop:hadoop-hdfs:2.5.0:tests') {
-        exclude group: 'javax.servlet'
-    }
-	testCompile ('org.apache.hadoop:hadoop-common:2.5.0:tests') {
-        exclude group: 'javax.servlet'
-    }
-}
-
 
 configurations {
-    runtime.exclude module: 'spark-core_2.10'
-    runtime.exclude module: 'scala-library'
-    runtime.exclude module: 'hadoop-hdfs'
+    all*.exclude group: 'javax.servlet'
+    provided.exclude module: 'hadoop-client'
+    integrationCompile.extendsFrom(testCompile)
+}
+
+dependencies {
+    provided group: 'org.apache.spark',     name: 'spark-core_2.10',    version: '1.6.1'
+    provided group: 'org.scala-lang',       name: 'scala-library',      version: '2.10.2'
+    provided group: 'org.apache.hadoop',    name: 'hadoop-hdfs',        version: '2.6.0'
+    provided group: 'org.apache.hadoop',    name: 'hadoop-common',      version: '2.6.0'
+
+    provided 'org.apache.httpcomponents:httpclient:4.5'
+
+    compile group: 'org.apache.hadoop',         name: 'hadoop-mapreduce-client-core',   version: '2.6.0'
+    compile group: 'org.schemarepo',            name: 'schema-repo-client',             version: '0.1.3'
+    compile group: 'com.hadoop.gplcompression', name: 'hadoop-lzo',                     version: '0.4.19'
+
+    compile group: 'org.apache.kafka',          name: 'kafka_2.10',     version: '0.8.2.2'
+
+    testCompile group: 'org.mockito',       name: 'mockito-all',        version: '1.9.5'
+    testCompile group: 'junit',             name: 'junit',              version: '4.11'
+    testCompile group: 'org.apache.hadoop', name: 'hadoop-hdfs',        version: '2.6.0', classifier: 'tests'
+    testCompile group: 'org.apache.hadoop', name: 'hadoop-common',      version: '2.6.0', classifier: 'tests'
+
+    testCompile (group: 'com.palantir',      name: 'curator-test-rule',  version: '0.0.3') {
+        exclude group: 'com.google.guava'
+    }
+
+    testCompile (group: 'com.github.tomakehurst', name: 'wiremock', version: '1.58') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.google.guava'
+    }
+}
+
+
+
+idea {
+    module {
+        scopes.TEST.plus += [ configurations.integrationCompile ]
+        testSourceDirs += file("${projectDir}/src/integration/resources")
+    }
 }
 
 /***** packaging *****/
 
-apply plugin: 'pkg-debian'
+shadowJar {
+    mergeServiceFiles()
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    dependencies {
+        exclude(dependency('org.apache.spark:spark-core_2.10:1.6.1'))
+        exclude(dependency('org.scala-lang:scala-library:2.10.2'))
+        exclude(dependency('org.apache.hadoop:hadoop-hdfs:2.6.0'))
+    }
+}
+
 task prepareControlFile(type: Copy) {
   from 'src/package'
   into 'build/package'
@@ -100,52 +115,45 @@ task prepareControlFile(type: Copy) {
 }
 
 debian {
-  packagename = "camus-compressor"
-  controlDirectory = "build/package"
-  changelogFile = "src/package/changelog"
+  packagename = 'camus-compressor'
+  controlDirectory = 'build/package'
+  changelogFile = 'src/package/changelog'
 
   data {
-    def baseDir = "build"
+    def baseDir = 'build'
     file {
       name = "${baseDir}/libs/camus-compressor-${project.version}-all.jar"
       target = "usr/lib/hadoop-tools/camus-compressor/compressor-${project.version}.jar"
       mapper {
-        fileMode = "644"
+        fileMode = '644'
       }
     }
     file {
-      name = "src/main/resources/compressor.sh"
-      target = "usr/lib/hadoop-tools/camus-compressor/compressor.sh"
+      name = 'src/main/resources/camus-compressor.properties'
+      target = 'etc/camus-compressor/camus-compressor.properties'
       mapper {
-        fileMode = "755"
+        fileMode = '644'
+      }
+    }
+    file {
+      name = 'src/main/resources/compressor.sh'
+      target = 'usr/lib/hadoop-tools/camus-compressor/compressor.sh'
+      mapper {
+        fileMode = '755'
       }
     }
     link {
-      path = "usr/lib/hadoop-tools/camus-compressor/compressor.jar"
+      path = 'usr/lib/hadoop-tools/camus-compressor/compressor.jar'
       name = "/usr/lib/hadoop-tools/camus-compressor/compressor-${project.version}.jar"
     }
   }
 }
 
-
-/***** integration tests *****/
-
-sourceSets {
-    integration {
-        compileClasspath += sourceSets.test.compileClasspath
-        runtimeClasspath += sourceSets.test.runtimeClasspath
-        java.srcDir file('src/integration/java')
-    }
+integrationTest {
+    jvmArgs "-XX:MaxPermSize=256m"
 }
 
-task integration(type: Test) {
-    testClassesDir = sourceSets.integration.output.classesDir
-    classpath = project.sourceSets.main.output +
-       project.sourceSets.integration.output +
-       sourceSets.test.compileClasspath
-    
-    dependsOn integrationClasses
-}
 
-check.dependsOn integration
-integration.mustRunAfter test
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.14'
+}

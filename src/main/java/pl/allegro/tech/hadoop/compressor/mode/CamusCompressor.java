@@ -1,40 +1,43 @@
-package pl.allegro.tech.hadoop.compressor;
+package pl.allegro.tech.hadoop.compressor.mode;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
+import pl.allegro.tech.hadoop.compressor.option.CompressorOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class CamusCompressor {
+public class CamusCompressor implements Compress {
 
-    private static final int COMPRESSOR_TIMEOUT_DAYS = 10;
+    private final long timeout;
     private FileSystem fileSystem;
     private TopicCompressor topicCompressor;
-    static final List<String> EXCLUDES = Collections.unmodifiableList(Arrays.asList("base", "history", "tables"));
+
+    final List<String> excludes;
 
     private Logger logger = Logger.getLogger(CamusCompressor.class);
     private ExecutorService executor;
 
-    public CamusCompressor(FileSystem fileSystem, TopicCompressor topicCompressor, int numOfExecutors) {
+    public CamusCompressor(FileSystem fileSystem, TopicCompressor topicCompressor, int numOfExecutors, CompressorOptions options) {
         this.fileSystem = fileSystem;
         this.topicCompressor = topicCompressor;
         executor = Executors.newFixedThreadPool(numOfExecutors);
+        timeout = options.getAllModeTimeout();
+        excludes = Collections.unmodifiableList(options.getAllModeExcludes());
     }
 
     public List<Path> getTopicDirs(Path camusDir) throws IOException {
         List<Path> paths = new ArrayList<>();
         final FileStatus[] fileStatuses = fileSystem.listStatus(camusDir);
         for (FileStatus fileStatus : fileStatuses) {
-            if (EXCLUDES.contains(fileStatus.getPath().getName())) {
+            if (excludes.contains(fileStatus.getPath().getName())) {
                 continue;
             }
             paths.add(fileStatus.getPath());
@@ -42,7 +45,7 @@ public class CamusCompressor {
         return paths;
     }
 
-    public void compressAll(Path camusDir) throws IOException {
+    public void compress(Path camusDir) throws IOException {
         logger.info(String.format("Compress all %s", camusDir));
         final List<Path> topicDirs = getTopicDirs(camusDir);
         for (final Path topicDir : topicDirs) {
@@ -50,7 +53,7 @@ public class CamusCompressor {
         }
         executor.shutdown();
         try {
-            executor.awaitTermination(COMPRESSOR_TIMEOUT_DAYS, TimeUnit.DAYS);
+            executor.awaitTermination(timeout, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             logger.error("Executor interrupted");
         }
@@ -62,15 +65,15 @@ public class CamusCompressor {
             @Override
             public void run() {
                 try {
-                    topicCompressor.compressTopic(topicDir);
+                    topicCompressor.compress(topicDir);
                 } catch (IOException e) {
-                    logger.error("Exception occured on compressing " + topicDir, e);
+                    logger.error("Exception occurred on compressing " + topicDir, e);
                 }
             }
         };
     }
 
-    public void compressAll(String camusDir) throws IOException {
-        compressAll(new Path(camusDir));
+    public void compress(String camusDir) throws IOException {
+        compress(new Path(camusDir));
     }
 }

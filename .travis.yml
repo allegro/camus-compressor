@@ -1,1 +1,10 @@
+---
 language: java
+script: ./gradlew test integrationTest
+jdk:
+  - openjdk7
+  - oraclejdk7
+  - oraclejdk8
+
+sudo: false
+
