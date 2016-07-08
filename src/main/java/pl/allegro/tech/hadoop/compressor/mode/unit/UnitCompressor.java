@@ -53,7 +53,7 @@ public abstract class UnitCompressor implements Compress {
 
             long beforeCount = countIfRequested(inputPath);
             repartition(inputPath, outputDir, jobGroup, inputAnalyser.countInputSplits(inputPath));
-            long afterCount = countIfRequested(inputPath);
+            long afterCount = countIfRequested(outputDir);
 
             if (beforeCount != afterCount) {
                 throw new InvalidCountsException("Counts are different before and after compression.",
