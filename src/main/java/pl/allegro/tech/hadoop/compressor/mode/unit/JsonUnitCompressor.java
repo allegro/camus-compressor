@@ -30,6 +30,11 @@ public class JsonUnitCompressor extends UnitCompressor {
     }
 
     @Override
+    protected long countOutputDir(String outputDir, String inputPath) throws IOException {
+        return compression.openUncompressed(inputPath).count();
+    }
+
+    @Override
     protected void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)
             throws IOException {
 
@@ -40,11 +45,6 @@ public class JsonUnitCompressor extends UnitCompressor {
         JobConf jobConf = new JobConf(context.hadoopConfiguration());
         context.setJobGroup("compression", jobGroup);
         compression.compress(rdd, outputDir, jobConf);
-    }
-
-    @Override
-    protected long count(String inputPath) throws IOException {
-        return compression.openUncompressed(inputPath).count();
     }
 
     private static class RemoveKeyFunction implements PairFunction<Tuple2<LongWritable, Text>, NullWritable, Text> {

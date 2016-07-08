@@ -39,7 +39,7 @@ public class AvroUnitCompressor extends UnitCompressor {
     }
 
     @Override
-    protected long count(String inputPath) throws IOException {
+    protected long countOutputDir(String outputDir, String inputPath) throws IOException {
         final JobConf jobConf = new JobConf(sparkContext.hadoopConfiguration());
         final Schema schema = schemaRepository.findLatestSchema(inputPath);
 
@@ -50,6 +50,7 @@ public class AvroUnitCompressor extends UnitCompressor {
                 .openUncompressed(jobConf)
                 .count();
     }
+
 
     @Override
     protected void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)

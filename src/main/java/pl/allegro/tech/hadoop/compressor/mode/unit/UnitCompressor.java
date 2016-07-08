@@ -51,11 +51,12 @@ public abstract class UnitCompressor implements Compress {
             logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
             String jobGroup = String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize));
 
-            long beforeCount = countIfRequested(inputPath);
+            long beforeCount = countIfRequested(inputPath, inputPath);
             repartition(inputPath, outputDir, jobGroup, inputAnalyser.countInputSplits(inputPath));
-            long afterCount = countIfRequested(outputDir);
+            long afterCount = countIfRequested(outputDir, inputPath);
 
             if (beforeCount != afterCount) {
+                logger.error(String.format("Counts are different: %d vs. %d", beforeCount, afterCount));
                 throw new InvalidCountsException("Counts are different before and after compression.",
                         beforeCount, afterCount);
             }
@@ -67,15 +68,15 @@ public abstract class UnitCompressor implements Compress {
 
     }
 
-    private long countIfRequested(String inputPath) throws IOException {
+    private long countIfRequested(String countIn, String inputPath) throws IOException {
         if (calcCounts) {
-            return count(inputPath);
+            return countOutputDir(countIn, inputPath);
         } else {
             return -1L;
         }
     }
 
-    protected abstract long count(String inputPath) throws IOException;
+    protected abstract long countOutputDir(String outputDir, String inputPath) throws IOException;
 
     protected abstract void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)
             throws IOException;
