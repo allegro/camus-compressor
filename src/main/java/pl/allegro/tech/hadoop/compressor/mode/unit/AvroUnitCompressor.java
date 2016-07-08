@@ -44,7 +44,7 @@ public class AvroUnitCompressor extends UnitCompressor {
         final Schema schema = schemaRepository.findLatestSchema(inputPath);
 
         AvroJob.setOutputSchema(jobConf, schema);
-        FileInputFormat.setInputPaths(jobConf, inputPath);
+        FileInputFormat.setInputPaths(jobConf, outputDir);
 
         return compression
                 .openUncompressed(jobConf)
