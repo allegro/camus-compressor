@@ -33,6 +33,8 @@ Camus Compressor. Provided `src/main/resources/compressor.sh` file helps executi
  * `e`: Parrallelism level of task (number of spark executors, default: 2);
  * `m`: Spark `--master` option;
  * `c`: Spark `--conf` option. You can use it to pass extra arguments to job.
+ * `d`: Spark `--driver-memory` option. If you have huge number of partitions to compress, please consider set this 
+   option to, for example, `4g`.
  
 ## Configuration file
 
@@ -93,6 +95,7 @@ of Spark in version 1.6.1 or above.
     compressor.sh -P /etc/camus-compressor/camus-compressor.properties \
         -e 10 \
         -q default \
+        -d 4g \
         -m yarn-cluster \
         -c "spark.executor.extraJavaOptions=-XX:+PrintGCDetails -XX:+PrintGCTimeStamps"
 
