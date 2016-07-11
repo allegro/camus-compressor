@@ -1,15 +1,19 @@
-package pl.allegro.tech.hadoop.compressor;
+package pl.allegro.tech.hadoop.compressor.util;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import pl.allegro.tech.hadoop.compressor.compression.SnappyCompression;
+import pl.allegro.tech.hadoop.compressor.compression.Compression;
+import pl.allegro.tech.hadoop.compressor.option.FilesFormat;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -19,6 +23,7 @@ import static java.util.Calendar.MONTH;
 import static java.util.Calendar.YEAR;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -28,6 +33,9 @@ public class InputAnalyserTest {
     private FileSystem fileSystem;
     @Mock
     private JavaSparkContext sparkContext;
+
+    @Mock
+    private Compression<LongWritable, NullWritable, Text> snappyCompression;
 
     private static final FileStatus[] EMPTY_STATUSES = {};
     private static final String RAW_FILE = "part-0001";
@@ -39,7 +47,8 @@ public class InputAnalyserTest {
         String yesterdayDir = getYesterdayDir();
 
         String topicLocation = getTopicLocation();
-        when(fileSystem.getDefaultBlockSize(new Path("/"))).thenReturn(1024L);
+        when(snappyCompression.getSplits(anyInt())).thenReturn(1);
+        when(snappyCompression.getExtension()).thenReturn("snappy");
         when(fileSystem.globStatus(new Path(String.format("%s/hourly/*/*/*/*", topicLocation)))).thenReturn(EMPTY_STATUSES);
         when(fileSystem.globStatus(new Path(String.format("%s/daily/%s", topicLocation, yesterdayDir)))).thenReturn(new FileStatus[]{
                 createFileStatusForPath(String.format("%s/%s/%s", topicLocation, todayDir, COMPRESSED_FILE)),
@@ -53,7 +62,8 @@ public class InputAnalyserTest {
         boolean forceSplit = true;
         String yesterdayDir = getYesterdayDir();
         String topicLocation = getTopicLocation();
-        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+
+        InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, snappyCompression, forceSplit);
 
         //when
         boolean shouldCompress = analyser.shouldCompress(String.format("%s/daily/%s", topicLocation, yesterdayDir));
@@ -68,7 +78,7 @@ public class InputAnalyserTest {
         boolean forceSplit = false;
         String yesterdayDir = getYesterdayDir();
         String topicLocation = getTopicLocation();
-        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+        InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, snappyCompression, forceSplit);
 
         //when
         boolean shouldCompress = analyser.shouldCompress(String.format("%s/daily/%s", topicLocation, yesterdayDir));
@@ -89,7 +99,7 @@ public class InputAnalyserTest {
                 createFileStatusForPath(String.format("%s/%s/%s", topicLocation, yesterdayDir, RAW_FILE))
         });
         boolean forceSplit = false;
-        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+        InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, snappyCompression, forceSplit);
 
         //when
         boolean shouldCompress = analyser.shouldCompress(String.format("%s/daily/%s", topicLocation, yesterdayDir));
@@ -104,7 +114,7 @@ public class InputAnalyserTest {
         boolean forceSplit = false;
         String yesterdayDir = getYesterdayDir();
         String topicLocation = getTopicLocation();
-        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+        InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, snappyCompression, forceSplit);
 
         //when
         long inputSize = analyser.countInputSize(String.format("%s/daily/%s", topicLocation, yesterdayDir));
@@ -119,7 +129,7 @@ public class InputAnalyserTest {
         boolean forceSplit = false;
         String yesterdayDir = getYesterdayDir();
         String topicLocation = getTopicLocation();
-        InputAnalyser analyser = new InputAnalyser(fileSystem, new SnappyCompression(fileSystem, sparkContext), forceSplit);
+        InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, snappyCompression, forceSplit);
 
         //when
         int inputSplits = analyser.countInputSplits(String.format("%s/daily/%s", topicLocation, yesterdayDir));
@@ -143,7 +153,7 @@ public class InputAnalyserTest {
         return String.format("%4d/%02d/%02d", cal.get(YEAR), cal.get(MONTH) + 1, cal.get(DAY_OF_MONTH));
     }
 
-    private final FileStatus createFileStatusForPath(String fileLocation) {
+    private FileStatus createFileStatusForPath(String fileLocation) {
         return new FileStatus(1024L, false, 3, 1024L, 100, new Path(fileLocation));
     }
 }

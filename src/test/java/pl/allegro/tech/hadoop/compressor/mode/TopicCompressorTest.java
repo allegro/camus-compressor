@@ -1,15 +1,4 @@
-package pl.allegro.tech.hadoop.compressor;
-
-import static java.util.Calendar.DAY_OF_MONTH;
-import static java.util.Calendar.MONTH;
-import static java.util.Calendar.YEAR;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.util.Calendar;
+package pl.allegro.tech.hadoop.compressor.mode;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -19,6 +8,21 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import pl.allegro.tech.hadoop.compressor.mode.unit.UnitCompressor;
+import pl.allegro.tech.hadoop.compressor.option.CompressorOptions;
+import pl.allegro.tech.hadoop.compressor.util.TopicDateFilter;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Calendar;
+
+import static java.util.Calendar.DAY_OF_MONTH;
+import static java.util.Calendar.MONTH;
+import static java.util.Calendar.YEAR;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TopicCompressorTest {
@@ -30,11 +34,15 @@ public class TopicCompressorTest {
     @Mock
     private UnitCompressor unitCompressor;
 
+    @Mock
+    private CompressorOptions options;
+
     private TopicCompressor topicCompressor;
 
     @Before
     public void setUp() {
-        topicCompressor = new TopicCompressor(fileSystem, unitCompressor, new TopicDateFilter(1));
+        when(options.getTopicModePatterns()).thenReturn(Arrays.asList("hourly/*/*/*/*", "daily/*/*/*"));
+        topicCompressor = new TopicCompressor(fileSystem, unitCompressor, new TopicDateFilter(1), options);
     }
 
     @Test
@@ -48,11 +56,11 @@ public class TopicCompressorTest {
         when(fileSystem.globStatus(new Path("topic_dir/daily/*/*/*"))).thenReturn(EMPTY_STATUSES);
 
         // when
-        topicCompressor.compressTopic("topic_dir");
+        topicCompressor.compress("topic_dir");
 
         // then
-        verify(unitCompressor).compressUnit(hour1);
-        verify(unitCompressor).compressUnit(hour2);
+        verify(unitCompressor).compress(hour1);
+        verify(unitCompressor).compress(hour2);
         verifyNoMoreInteractions(unitCompressor);
 
     }
@@ -68,11 +76,11 @@ public class TopicCompressorTest {
         });
 
         // when
-        topicCompressor.compressTopic("topic_dir");
+        topicCompressor.compress("topic_dir");
 
         // then
-        verify(unitCompressor).compressUnit(day1);
-        verify(unitCompressor).compressUnit(day2);
+        verify(unitCompressor).compress(day1);
+        verify(unitCompressor).compress(day2);
         verifyNoMoreInteractions(unitCompressor);
 
     }
@@ -88,7 +96,7 @@ public class TopicCompressorTest {
         when(fileSystem.globStatus(new Path("topic_dir/daily/*/*/*"))).thenReturn(EMPTY_STATUSES);
 
         // when
-        topicCompressor.compressTopic("topic_dir");
+        topicCompressor.compress("topic_dir");
 
         // then
         verifyZeroInteractions(unitCompressor);
@@ -109,18 +117,18 @@ public class TopicCompressorTest {
         });
 
         // when
-        topicCompressor.compressTopic(base);
+        topicCompressor.compress(base);
 
         // then
-        verify(unitCompressor).compressUnit(new Path(String.format("%s/%s", base, yesterdayDir)));
+        verify(unitCompressor).compress(new Path(String.format("%s/%s", base, yesterdayDir)));
         verifyNoMoreInteractions(unitCompressor);
     }
 
-    private static final FileStatus fileStatusForPath(Path path) {
+    private static FileStatus fileStatusForPath(Path path) {
         return new FileStatus(10, true, 3, 1024, 100, path);
     }
 
-    private static final FileStatus fileStatusForPath(String path) {
+    private static FileStatus fileStatusForPath(String path) {
         return fileStatusForPath(new Path(path));
     }
 }

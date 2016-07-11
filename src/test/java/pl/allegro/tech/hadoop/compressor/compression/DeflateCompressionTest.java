@@ -1,7 +1,5 @@
 package pl.allegro.tech.hadoop.compressor.compression;
 
-import com.hadoop.compression.lzo.LzoCodec;
-import com.hadoop.compression.lzo.LzopCodec;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -10,9 +8,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextOutputFormat;
-import org.apache.log4j.Logger;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.Before;
@@ -24,9 +22,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import pl.allegro.tech.hadoop.compressor.option.CompressionFormat;
 
-import java.lang.reflect.Field;
-
-import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
@@ -35,19 +30,19 @@ import static org.mockito.Mockito.when;
 import static pl.allegro.tech.hadoop.compressor.Utils.checkDecompress;
 import static pl.allegro.tech.hadoop.compressor.Utils.fileStatusForPath;
 
+
 @RunWith(MockitoJUnitRunner.class)
-public class LzoCompressionTest {
+public class DeflateCompressionTest {
 
-    private static final Logger logger = Logger.getLogger(LzoCompressionTest.class);
-    private static final String OUTPUT_DIR_NAME = "output_dir_test";
+    private static final String CODEC = DeflateCodec.class.getName();
+    private static final String OUTPUT_DIR_NAME = "output_dir_name";
     private static final Path OUTPUT_PATH = new Path(OUTPUT_DIR_NAME);
-    private static final Path COMPRESSED_FILE_PATH = OUTPUT_PATH.suffix("file.lzo");
-    private static final Path SECOND_COMPRESSED_FILE_PATH = OUTPUT_PATH.suffix("file2.lzo");
-    private static final FileStatus[] TEST_STATUSES = {fileStatusForPath(COMPRESSED_FILE_PATH),
-                                                            fileStatusForPath(SECOND_COMPRESSED_FILE_PATH)};
-    private static final String CODEC_SUBSTRING = LzoCodec.class.getName();
-
+    private static final Path COMPRESSED_FILE_PATH = OUTPUT_PATH.suffix("file.deflate");
+    private static final Path SECOND_COMPRESSED_FILE_PATH = OUTPUT_PATH.suffix("file2.deflate");
     private static final String INPUT_FILE = "test_file";
+    private static final org.apache.hadoop.fs.FileStatus[] TEST_STATUSES = new FileStatus[] {
+            fileStatusForPath(COMPRESSED_FILE_PATH), fileStatusForPath(SECOND_COMPRESSED_FILE_PATH)
+    };
 
     @Mock
     private Configuration configuration;
@@ -61,32 +56,28 @@ public class LzoCompressionTest {
     @Mock
     private JavaPairRDD<NullWritable, Text> content;
 
-    private Compression<LongWritable, NullWritable, Text> lzoCompression;
+    private Compression<LongWritable, NullWritable, Text> deflateCompression;
     private JobConf jobConf;
 
     @Before
-    public void setUp() {
-        lzoCompression = CompressionBuilder.forSparkContext(sparkContext)
+    public void setUp() throws Exception {
+        deflateCompression = CompressionBuilder.forSparkContext(sparkContext)
                 .onFileSystem(fileSystem)
-                .withCompressorOfType(CompressionFormat.LZO)
+                .withCompressorOfType(CompressionFormat.DEFLATE)
                 .forJsonFiles();
         jobConf = new JobConf();
     }
 
     @Test
-    public void shouldCompressWithLzoCodec() throws Exception {
+    public void shouldCompressWithDeflateCodec() throws Exception {
         // given
-        when(configuration.get(eq("io.compression.codecs"))).thenReturn(CODEC_SUBSTRING);
+        when(configuration.get("io.compression.codecs")).thenReturn(CODEC);
         when(configuration.getBoolean(eq("hadoop.native.lib"), anyBoolean())).thenReturn(true);
 
-        final Field field = LzoCodec.class.getDeclaredField("nativeLzoLoaded");
-        field.setAccessible(true);
-        field.setBoolean(LzoCodec.class, true);
-
-        when(configuration.getClassByName(CODEC_SUBSTRING)).thenAnswer(new Answer<Class<?>>() {
+        when(configuration.getClassByName(CODEC)).thenAnswer(new Answer<Class<?>>() {
             @Override
             public Class<?> answer(InvocationOnMock invocation) throws Throwable {
-                return LzopCodec.class;
+                return DeflateCodec.class;
             }
         });
 
@@ -94,19 +85,15 @@ public class LzoCompressionTest {
         when(fileSystem.listStatus(eq(OUTPUT_PATH), any(GlobFilter.class))).thenReturn(TEST_STATUSES);
 
         // when
-        try {
-            lzoCompression.compress(content, OUTPUT_DIR_NAME, jobConf);
-        } catch (UnsatisfiedLinkError ex) {
-            logger.warn("native lzo library not loaded (acceptable in unit tests)");
-        }
+        deflateCompression.compress(content, OUTPUT_DIR_NAME, jobConf);
 
         // then
-        verify(content).saveAsHadoopFile(OUTPUT_DIR_NAME, NullWritable.class, Text.class, TextOutputFormat.class, jobConf);
-        assertEquals(jobConf.get(AbstractCompression.COMPRESSION_CODEC_KEY), LzopCodec.class.getName());
+        verify(content).saveAsHadoopFile(eq(OUTPUT_DIR_NAME), eq(NullWritable.class), eq(Text.class),
+                eq(TextOutputFormat.class), any(JobConf.class));
     }
 
     @Test
-    public void shouldDecompressLzoFiles() throws Exception {
-        checkDecompress(INPUT_FILE, lzoCompression, sparkContext);
+    public void shouldDecompressDeflate() throws Exception {
+        checkDecompress(INPUT_FILE, deflateCompression, sparkContext);
     }
 }
