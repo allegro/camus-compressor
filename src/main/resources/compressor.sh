@@ -28,7 +28,7 @@ if [ "$SPARK_SUBMIT" == "" ]; then
     SPARK_SUBMIT="/usr/bin/spark-submit1.6"
 fi
 
-while getopts ":q:e:P:c:m:d:" opt; do
+while getopts ":q:e:P:c:m:d:n:" opt; do
   case $opt in
     q)
       QUEUE=$OPTARG
