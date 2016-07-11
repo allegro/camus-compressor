@@ -7,12 +7,14 @@ EXECUTORS=2
 SPARK_MASTER='yarn-cluster'
 SPARK_CONFIG=""
 DRIVER_MEMORY="1g"
+EXECUTOR_MEMORY="1g"
 
 function usage {
-  echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
+  echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-n executor_memory] [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
   echo "  Default queue is \"default\""
   echo "  Default number of executors is 2"
   echo "  Default driver memory is 1g"
+  echo "  Default executor memory is 1g"
   echo "  Conf is passed as --conf to spark-submit, so you can use it multiple times:"
   echo "     - SPARK_SUBMIT=/usr/bin/spark-submit ./compressor.sh -c spark.executor.instances=10 -c spark.executor.memory=4g ..."
   echo "     - SPARK_SUBMIT=/usr/bin/spark-submit ./compressor.sh -c \"spark.executor.extraJavaOptions=-XX:+PrintGCDetails -XX:+PrintGCTimeStamps\" ..."
@@ -43,6 +45,9 @@ while getopts ":q:e:P:c:m:d:" opt; do
     d)
       DRIVER_MEMORY="$OPTARG"
       ;;
+    n)
+      EXECUTOR_MEMORY="$OPTARG"
+      ;;
     c)
       SPARK_CONFIG="$SPARK_CONFIG --conf \"$OPTARG\""
       ;;
@@ -67,6 +72,7 @@ $SPARK_SUBMIT --properties-file $PROPERTIES_FILE \
   --class pl.allegro.tech.hadoop.compressor.Compressor \
   --queue $QUEUE \
   --driver-memory $DRIVER_MEMORY \
+  --executor-memory $EXECUTOR_MEMORY \
   --master "$SPARK_MASTER" \
   --num-executors $EXECUTORS \
   $SPARK_CONFIG \
