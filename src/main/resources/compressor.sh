@@ -71,7 +71,7 @@ if [ ! -f "$PROPERTIES_FILE" ]; then
     usage
     exit 1
 fi
-set -x
+
 $SPARK_SUBMIT --properties-file $PROPERTIES_FILE \
   --class pl.allegro.tech.hadoop.compressor.Compressor \
   --queue $QUEUE \
