@@ -8,9 +8,10 @@ SPARK_MASTER='yarn-cluster'
 SPARK_CONFIG=""
 DRIVER_MEMORY="1g"
 EXECUTOR_MEMORY="1g"
+APP_NAME=""
 
 function usage {
-  echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-n executor_memory] [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
+  echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-a APP_NAME] [-n executor_memory] [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
   echo "  Default queue is \"default\""
   echo "  Default number of executors is 2"
   echo "  Default driver memory is 1g"
@@ -28,7 +29,7 @@ if [ "$SPARK_SUBMIT" == "" ]; then
     SPARK_SUBMIT="/usr/bin/spark-submit1.6"
 fi
 
-while getopts ":q:e:P:c:m:d:" opt; do
+while getopts ":q:e:P:c:m:d:n:a:" opt; do
   case $opt in
     q)
       QUEUE=$OPTARG
@@ -47,6 +48,9 @@ while getopts ":q:e:P:c:m:d:" opt; do
       ;;
     n)
       EXECUTOR_MEMORY="$OPTARG"
+      ;;
+    a)
+      APP_NAME="--name $OPTARG"
       ;;
     c)
       SPARK_CONFIG="$SPARK_CONFIG --conf \"$OPTARG\""
@@ -75,5 +79,6 @@ $SPARK_SUBMIT --properties-file $PROPERTIES_FILE \
   --executor-memory $EXECUTOR_MEMORY \
   --master "$SPARK_MASTER" \
   --num-executors $EXECUTORS \
+  $APP_NAME \
   $SPARK_CONFIG \
   /usr/lib/hadoop-tools/camus-compressor/compressor.jar
