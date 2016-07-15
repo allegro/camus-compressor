@@ -93,9 +93,9 @@ public abstract class UnitCompressor implements Compress {
 
     private void cleanup(String inputDir, String outputDir) throws IOException {
         logger.info(String.format("Cleaning input dir %s and success file %s", inputDir, getSuccessFilePath(outputDir)));
-        String pathToStoreBackup = backupDir + replaceDotsInTopicNameToUnderscores(inputDir);
+        String pathToStoreBackup = backupDir + inputDir;
         logger.info(String.format("path to store backup %s", pathToStoreBackup));
-        createBackupFilePath(pathToStoreBackup);
+        createBackupDir(pathToStoreBackup);
         if (move(inputDir, pathToStoreBackup)) {
             if (move(outputDir, inputDir)) {
                 if (!remove(pathToStoreBackup, true)) {
@@ -112,12 +112,8 @@ public abstract class UnitCompressor implements Compress {
         }
     }
 
-    private String replaceDotsInTopicNameToUnderscores(String inputDir) {
-        return inputDir.replaceAll("\\.", "_");
-    }
-
-    private boolean createBackupFilePath(String backupPath) throws IOException {
-        return fileSystem.createNewFile(new Path(backupPath));
+    private boolean createBackupDir(String backupPath) throws IOException {
+        return fileSystem.mkdirs(new Path(backupPath));
     }
 
     private boolean createInvalidCountFilePath(String outputDir) throws IOException {
