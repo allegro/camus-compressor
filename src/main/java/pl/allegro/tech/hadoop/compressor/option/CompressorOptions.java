@@ -1,10 +1,8 @@
 package pl.allegro.tech.hadoop.compressor.option;
 
 import org.apache.commons.lang.ClassUtils;
-import org.apache.hadoop.util.ClassUtil;
 import org.apache.spark.SparkConf;
 import pl.allegro.tech.hadoop.compressor.schema.IdentityTopicNameRetriever;
-import pl.allegro.tech.hadoop.compressor.schema.KafkaTopicNameRetriever;
 import pl.allegro.tech.hadoop.compressor.schema.SchemaRepoSchemaRepository;
 import pl.allegro.tech.hadoop.compressor.schema.SchemaRepository;
 import pl.allegro.tech.hadoop.compressor.schema.TopicNameRetriever;
@@ -24,6 +22,7 @@ public class CompressorOptions implements Serializable {
     private final boolean forceSplit;
     private final String zookeeper;
     private final String workingDir;
+    private final String backupDir;
     private final long allModeTimeout;
     private Class<? extends SchemaRepository> schemaRepositoryClass;
     private Class<? extends TopicNameRetriever> topicNameRetrieverClass;
@@ -42,6 +41,7 @@ public class CompressorOptions implements Serializable {
         forceSplit = sparkConf.getBoolean("spark.compressor.processing.force", false);
         zookeeper = sparkConf.get("spark.compressor.zookeeper.paths", "");
         workingDir = sparkConf.get("spark.compressor.processing.working.dir", "/tmp/compressor");
+        backupDir = sparkConf.get("spark.compressor.processing.backup.dir", "/tmp/compressor_backup");
         allModeExcludes = Arrays.asList(sparkConf.get("spark.compressor.processing.mode.all.excludes").split(","));
         topicModePatterns = Arrays.asList(sparkConf.get("spark.compressor.processing.mode.topic.pattern").split(","));
         allModeTimeout = sparkConf.getLong("spark.compressor.processing.mode.all.timeout.minutes", 1440L);
@@ -96,6 +96,10 @@ public class CompressorOptions implements Serializable {
 
     public String getWorkingDir() {
         return workingDir;
+    }
+
+    public String getBackupDir() {
+        return backupDir;
     }
 
     public long getAllModeTimeout() {

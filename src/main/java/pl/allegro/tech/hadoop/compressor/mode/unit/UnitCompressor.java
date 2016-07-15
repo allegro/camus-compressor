@@ -18,12 +18,14 @@ public abstract class UnitCompressor implements Compress {
 
     protected final InputAnalyser inputAnalyser;
     private final String workingPath;
+    private final String backupDir;
     private final boolean calcCounts;
 
-    public UnitCompressor(FileSystem fileSystem, InputAnalyser inputAnalyser, String workingPath, boolean calcCounts) {
+    public UnitCompressor(FileSystem fileSystem, InputAnalyser inputAnalyser, String workingPath, String backupDir, boolean calcCounts) {
         this.fileSystem = fileSystem;
         this.inputAnalyser = inputAnalyser;
         this.workingPath = workingPath;
+        this.backupDir = backupDir;
         this.calcCounts = calcCounts;
     }
 
@@ -91,20 +93,31 @@ public abstract class UnitCompressor implements Compress {
 
     private void cleanup(String inputDir, String outputDir) throws IOException {
         logger.info(String.format("Cleaning input dir %s and success file %s", inputDir, getSuccessFilePath(outputDir)));
-        createBackupFilesPath(inputDir);
-        move(inputDir, getTemporaryDirPath(inputDir));
-        move(outputDir, inputDir);
-        remove(getSuccessFilePath(inputDir), false);
-        remove(getInvalidCountFilePath(inputDir), false);
-        remove(getTemporaryDirPath(inputDir), true);
+        String pathToStoreBackup = backupDir + replaceDotsInTopicNameToUnderscores(inputDir);
+        logger.info(String.format("path to store backup %s", pathToStoreBackup));
+        createBackupFilePath(pathToStoreBackup);
+        if (move(inputDir, pathToStoreBackup)) {
+            if (move(outputDir, inputDir)) {
+                if (!remove(pathToStoreBackup, true)) {
+                    logger.info(String.format("Could not delete data from backup folder %s", pathToStoreBackup));
+                }
+                if (!remove(getSuccessFilePath(inputDir), false)) {
+                    logger.info(String.format("Could not delete success compaction file from dir %s", getSuccessFilePath(inputDir)));
+                }
+            } else {
+                throw new RuntimeException(String.format("Could not move compacted data from %s to origin folder %s", outputDir , inputDir));
+            }
+        } else {
+            throw new RuntimeException(String.format("Could not move original data from %s to backup folder %s", inputDir , pathToStoreBackup));
+        }
     }
 
-    private boolean createBackupFilesPath(String inputDir) throws IOException {
-        return fileSystem.createNewFile(new Path(getBackupFilesPath(inputDir)));
+    private String replaceDotsInTopicNameToUnderscores(String inputDir) {
+        return inputDir.replaceAll("\\.", "_");
     }
 
-    private String getBackupFilesPath(String inputDir) {
-        return String.format("tmp/compact_backup/%s", inputDir);
+    private boolean createBackupFilePath(String backupPath) throws IOException {
+        return fileSystem.createNewFile(new Path(backupPath));
     }
 
     private boolean createInvalidCountFilePath(String outputDir) throws IOException {

@@ -9,7 +9,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Logger;
-import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
@@ -27,12 +26,12 @@ public class AvroUnitCompressor extends UnitCompressor {
     private final Compression<AvroWrapper<GenericRecord>, AvroWrapper<GenericRecord>, NullWritable> compression;
 
     public AvroUnitCompressor(JavaSparkContext sparkContext, FileSystem fileSystem, InputAnalyser inputAnalyser,
-                              String workingPath,
+                              String workingPath, String backupDir,
                               SchemaRepository schemaRepository,
                               Compression<AvroWrapper<GenericRecord>, AvroWrapper<GenericRecord>, NullWritable> compression,
                               boolean calculateCounts) {
 
-        super(fileSystem, inputAnalyser, workingPath, calculateCounts);
+        super(fileSystem, inputAnalyser, workingPath, backupDir, calculateCounts);
         this.sparkContext = sparkContext;
         this.schemaRepository = schemaRepository;
         this.compression = compression;
