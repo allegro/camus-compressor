@@ -93,7 +93,7 @@ public abstract class UnitCompressor implements Compress {
 
     private void cleanup(String inputDir, String outputDir) throws IOException {
         logger.info(String.format("Cleaning input dir %s and success file %s", inputDir, getSuccessFilePath(outputDir)));
-        String pathToStoreBackup = backupDir + inputDir;
+        String pathToStoreBackup = getBackupPath(inputDir);
         logger.info(String.format("path to store backup %s", pathToStoreBackup));
         createBackupDir(pathToStoreBackup);
         if (move(inputDir, pathToStoreBackup)) {
@@ -110,6 +110,11 @@ public abstract class UnitCompressor implements Compress {
         } else {
             throw new RuntimeException(String.format("Could not move original data from %s to backup folder %s", inputDir , pathToStoreBackup));
         }
+    }
+
+    private String getBackupPath(String inputDir) {
+        Path inputPath = new Path(inputDir);
+        return backupDir + inputPath.toUri().getPath();
     }
 
     private boolean createBackupDir(String backupPath) throws IOException {
