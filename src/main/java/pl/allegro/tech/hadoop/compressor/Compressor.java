@@ -93,11 +93,11 @@ public final class Compressor {
             final InputAnalyser inputAnalyser = createInputAnalyser(avroCompression);
             final SchemaRepository schemaRepository = createSchemaRepository();
             return new AvroUnitCompressor(sparkContext, fileSystem, inputAnalyser, compressorOptions.getWorkingDir(),
-                    schemaRepository, avroCompression, compressorOptions.isCalculateCounts());
+                    compressorOptions.getBackupDir(), schemaRepository, avroCompression, compressorOptions.isCalculateCounts());
         } else if (FilesFormat.JSON.equals(compressorOptions.getFormat())) {
             final Compression<LongWritable, NullWritable, Text> jsonCompression = getJsonCompression();
             final InputAnalyser inputAnalyser = createInputAnalyser(jsonCompression);
-            return new JsonUnitCompressor(sparkContext, fileSystem, compressorOptions.getWorkingDir(),
+            return new JsonUnitCompressor(sparkContext, fileSystem, compressorOptions.getWorkingDir(), compressorOptions.getBackupDir(),
                     jsonCompression, inputAnalyser, compressorOptions.isCalculateCounts());
         }
 

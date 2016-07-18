@@ -66,7 +66,7 @@ public class JsonUnitCompressorTest {
     @Before
     public void setUp() throws Exception {
         InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, compression, false);
-        unitCompressor = new JsonUnitCompressor(sparkContext, fileSystem, WORKING_PATH, compression, analyser, true);
+        unitCompressor = new JsonUnitCompressor(sparkContext, fileSystem, WORKING_PATH, BACKUP_PATH, compression, analyser, true);
         when(compression.openUncompressed(anyString())).thenReturn(testRDD);
         when(testRDD.count()).thenReturn(10L);
         when(testRDD.mapToPair(any(PairFunction.class))).thenReturn(saveTestRDD);
@@ -82,6 +82,7 @@ public class JsonUnitCompressorTest {
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
+        when(fileSystem.rename(any(Path.class), any(Path.class))).thenReturn(true);
 
         // when
         unitCompressor.compress(UNIT_PATH);
@@ -99,6 +100,7 @@ public class JsonUnitCompressorTest {
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
+        when(fileSystem.rename(any(Path.class), any(Path.class))).thenReturn(true);
 
         when(fileSystem.exists(any(Path.class))).thenAnswer(new Answer<Boolean>() {
             @Override
@@ -113,8 +115,9 @@ public class JsonUnitCompressorTest {
 
         // then
         verify(compression).compress(same(saveTestRDD), anyString(), any(JobConf.class));
+        verifyFinalizationInteractions(2, 2);
         verifyCleanup();
-        verify(fileSystem).delete(not(eq(UNIT_PATH)), eq(true));
+        verify(fileSystem, times(2)).delete(not(eq(UNIT_PATH)), eq(true));
     }
 
     @Test
@@ -127,6 +130,7 @@ public class JsonUnitCompressorTest {
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
+        when(fileSystem.rename(any(Path.class), any(Path.class))).thenReturn(true, true);
 
         // when
         try {
@@ -187,33 +191,34 @@ public class JsonUnitCompressorTest {
         // given
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
-        when(fileSystem.exists(any(Path.class))).thenReturn(true);
+        when(fileSystem.exists(any(Path.class))).thenReturn(true, true, false);
+        when(fileSystem.rename(any(Path.class), any(Path.class))).thenReturn(true);
 
         // when
         unitCompressor.compress(UNIT_PATH);
 
         // then
         verify(compression, never()).compress(any(JavaPairRDD.class), anyString(), any(JobConf.class));
+        verifyFinalizationInteractions(1, 2);
         verifyCleanup();
     }
 
     private void verifyCleanup() throws IOException {
-        verifyFinalizationInteractions(1);
         ArgumentCaptor<Path> pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(fileSystem).delete(pathCaptor.capture(), eq(false));
         assertTrue(isSuccessFile(pathCaptor.getValue()));
     }
 
     private void verifyNotCleaningUp() throws IOException {
-        verifyFinalizationInteractions(0);
+        verifyFinalizationInteractions(0, 0);
     }
 
-    private void verifyFinalizationInteractions(int invocations) throws IOException {
-        verify(fileSystem, times(invocations)).delete(eq(UNIT_PATH), eq(true));
+    private void verifyFinalizationInteractions(int deleteInvocations, int moveInvocations) throws IOException {
+        verify(fileSystem, times(deleteInvocations)).delete(any(Path.class), eq(true));
         final ArgumentCaptor<Path> fromPathCaptor = ArgumentCaptor.forClass(Path.class);
         final ArgumentCaptor<Path> toPathCaptor = ArgumentCaptor.forClass(Path.class);
-        verify(fileSystem, times(invocations)).rename(fromPathCaptor.capture(), toPathCaptor.capture());
-        if (invocations > 0) {
+        verify(fileSystem, times(moveInvocations)).rename(fromPathCaptor.capture(), toPathCaptor.capture());
+        if (moveInvocations > 0) {
             assertTrue(fromPathCaptor.getValue().toString().contains(WORKING_PATH));
             assertTrue(toPathCaptor.getValue().toString().contains(UNIT_PATH.toString()));
         }
@@ -240,6 +245,7 @@ public class JsonUnitCompressorTest {
 
     private static final FileStatus[] EMPTY_STATUSES = {};
     private static final String WORKING_PATH = "/tmp/compressor";
+    private static final String BACKUP_PATH = "/tmp/compressor_backup/";
 
 
 }
