@@ -53,7 +53,7 @@ while getopts ":q:e:P:c:m:d:n:a:" opt; do
       APP_NAME="--name $OPTARG"
       ;;
     c)
-      SPARK_CONFIG="$SPARK_CONFIG --conf \"$OPTARG\""
+      SPARK_CONFIG="$SPARK_CONFIG --conf $OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG"
