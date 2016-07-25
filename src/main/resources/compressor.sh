@@ -8,6 +8,8 @@ SPARK_MASTER='yarn-cluster'
 SPARK_CONFIG=""
 DRIVER_MEMORY="1g"
 EXECUTOR_MEMORY="1g"
+DRIVER_MEMORY_OVERHEAD="1g"
+EXECUTOR_MEMORY_OVERHEAD="1g"
 
 function usage {
   echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-n executor_memory] [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
@@ -15,6 +17,8 @@ function usage {
   echo "  Default number of executors is 2"
   echo "  Default driver memory is 1g"
   echo "  Default executor memory is 1g"
+  echo "  Default driver memory overhead is 1g"
+  echo "  Default executor memory overhead is 1g"
   echo "  Conf is passed as --conf to spark-submit, so you can use it multiple times:"
   echo "     - SPARK_SUBMIT=/usr/bin/spark-submit ./compressor.sh -c spark.executor.instances=10 -c spark.executor.memory=4g ..."
   echo "     - SPARK_SUBMIT=/usr/bin/spark-submit ./compressor.sh -c \"spark.executor.extraJavaOptions=-XX:+PrintGCDetails -XX:+PrintGCTimeStamps\" ..."
@@ -48,6 +52,12 @@ while getopts ":q:e:P:c:m:d:" opt; do
     n)
       EXECUTOR_MEMORY="$OPTARG"
       ;;
+    h)
+      DRIVER_MEMORY_OVERHEAD="$OPTARG"
+      ;;
+    o)
+      EXECUTOR_MEMORY_OVERHEAD="$OPTARG"
+      ;;
     c)
       SPARK_CONFIG="$SPARK_CONFIG --conf \"$OPTARG\""
       ;;
@@ -73,6 +83,8 @@ $SPARK_SUBMIT --properties-file $PROPERTIES_FILE \
   --queue $QUEUE \
   --driver-memory $DRIVER_MEMORY \
   --executor-memory $EXECUTOR_MEMORY \
+  --spark.yarn.driver.memoryOverhead $DRIVER_MEMORY_OVERHEAD \
+  --spark.yarn.executor.memoryOverhead $EXECUTOR_MEMORY_OVERHEAD \
   --master "$SPARK_MASTER" \
   --num-executors $EXECUTORS \
   $SPARK_CONFIG \
