@@ -67,7 +67,7 @@ public class JsonUnitCompressorTest {
     public void setUp() throws Exception {
         InputAnalyser analyser = new InputAnalyser(fileSystem, FilesFormat.JSON, compression, false);
         unitCompressor = new JsonUnitCompressor(sparkContext, fileSystem, WORKING_PATH, BACKUP_PATH, compression, analyser, true);
-        when(compression.openUncompressed(anyString())).thenReturn(testRDD);
+        when(compression.openUncompressed(any(JobConf.class))).thenReturn(testRDD);
         when(testRDD.count()).thenReturn(10L);
         when(testRDD.mapToPair(any(PairFunction.class))).thenReturn(saveTestRDD);
         when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration());
@@ -246,6 +246,5 @@ public class JsonUnitCompressorTest {
     private static final FileStatus[] EMPTY_STATUSES = {};
     private static final String WORKING_PATH = "/tmp/compressor";
     private static final String BACKUP_PATH = "/tmp/compressor_backup/";
-
 
 }

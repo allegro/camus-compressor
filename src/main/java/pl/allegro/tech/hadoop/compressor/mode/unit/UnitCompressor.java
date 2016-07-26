@@ -3,14 +3,17 @@ package pl.allegro.tech.hadoop.compressor.mode.unit;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Logger;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.storage.StorageLevel;
 import pl.allegro.tech.hadoop.compressor.exception.InvalidCountsException;
 import pl.allegro.tech.hadoop.compressor.mode.Compress;
 import pl.allegro.tech.hadoop.compressor.util.InputAnalyser;
 
 import java.io.IOException;
 
-public abstract class UnitCompressor implements Compress {
+public abstract class UnitCompressor<K, V> implements Compress {
 
     private static final Logger logger = Logger.getLogger(UnitCompressor.class);
     private static final int BYTES_IN_KB = 1024;
@@ -52,9 +55,15 @@ public abstract class UnitCompressor implements Compress {
             logger.info(String.format("Compress unit %s to %s (%d KB)", unitPath, outputDir, inputSize / BYTES_IN_KB));
             String jobGroup = String.format("%s (%s)", unitPath, FileUtils.byteCountToDisplaySize(inputSize));
 
-            long beforeCount = countIfRequested(inputPath, inputPath);
-            repartition(inputPath, outputDir, jobGroup, inputAnalyser.countInputSplits(inputPath));
-            long afterCount = countIfRequested(outputDir, inputPath);
+            JobConf inputPathJobConf = createJobConf(inputPath, inputPath);
+            JavaPairRDD<K, V> fetchedRddForInputPath = fetchRDD(inputPathJobConf);
+            fetchedRddForInputPath.persist(StorageLevel.MEMORY_AND_DISK());
+            long beforeCount = countIfRequested(fetchedRddForInputPath);
+            repartition(fetchedRddForInputPath, outputDir, jobGroup, inputPathJobConf, inputAnalyser.countInputSplits(inputPath));
+            JobConf outputPathJobConf = createJobConf(outputDir, inputPath);
+            JavaPairRDD<K, V> fetchedRddForOutputPath = fetchRDD(outputPathJobConf);
+            long afterCount = countIfRequested(fetchedRddForOutputPath);
+            fetchedRddForInputPath.unpersist();
 
             if (beforeCount != afterCount) {
                 logger.error(String.format("Counts are different: %d vs. %d", beforeCount, afterCount));
@@ -70,17 +79,21 @@ public abstract class UnitCompressor implements Compress {
 
     }
 
-    private long countIfRequested(String countIn, String inputPath) throws IOException {
+    private long countIfRequested(JavaPairRDD<K, V> rdd) throws IOException {
         if (calcCounts) {
-            return countOutputDir(countIn, inputPath);
+            return countOutputDir(rdd);
         } else {
             return -1L;
         }
     }
 
-    protected abstract long countOutputDir(String outputDir, String inputPath) throws IOException;
+    protected abstract JobConf createJobConf(String path, String schemaReaderPath);
 
-    protected abstract void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)
+    protected abstract JavaPairRDD<K, V> fetchRDD(JobConf jobConf) throws IOException;
+
+    protected abstract long countOutputDir(JavaPairRDD<K, V> rdd) throws IOException;
+
+    protected abstract void repartition(JavaPairRDD<K, V> rdd, String outputPath, String jobGroup, JobConf jobConf, int inputSplits)
             throws IOException;
 
     private String getTemporaryDirPath(String hourPath) {

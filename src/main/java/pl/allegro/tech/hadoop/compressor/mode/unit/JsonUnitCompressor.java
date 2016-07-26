@@ -4,6 +4,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -14,7 +15,7 @@ import scala.Tuple2;
 
 import java.io.IOException;
 
-public class JsonUnitCompressor extends UnitCompressor {
+public class JsonUnitCompressor extends UnitCompressor<LongWritable, Text> {
 
     private final JavaSparkContext context;
     private final Compression<LongWritable, NullWritable, Text> compression;
@@ -30,21 +31,30 @@ public class JsonUnitCompressor extends UnitCompressor {
     }
 
     @Override
-    protected long countOutputDir(String outputDir, String inputPath) throws IOException {
-        return compression.openUncompressed(inputPath).count();
+    protected JobConf createJobConf(String path, String schemaReaderPath) {
+        JobConf jobConf = new JobConf(context.hadoopConfiguration());
+        FileInputFormat.setInputPaths(jobConf, path);
+        return jobConf;
     }
 
     @Override
-    protected void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)
-            throws IOException {
+    protected JavaPairRDD<LongWritable, Text> fetchRDD(JobConf jobConf) throws IOException {
+        return compression.openUncompressed(jobConf);
+    }
 
-        final JavaPairRDD<NullWritable, Text> rdd = compression.openUncompressed(inputPath)
+    @Override
+    protected long countOutputDir(JavaPairRDD rdd) throws IOException {
+        return rdd.count();
+    }
+
+    @Override
+    protected void repartition(JavaPairRDD<LongWritable, Text> rdd, String outputPath, String jobGroup, JobConf jobConf, int inputSplits) throws IOException {
+        final JavaPairRDD<NullWritable, Text> repartitionedRDD = rdd
                 .repartition(inputSplits)
                 .mapToPair(new RemoveKeyFunction());
 
-        JobConf jobConf = new JobConf(context.hadoopConfiguration());
         context.setJobGroup("compression", jobGroup);
-        compression.compress(rdd, outputDir, jobConf);
+        compression.compress(repartitionedRDD, outputPath, jobConf);
     }
 
     private static class RemoveKeyFunction implements PairFunction<Tuple2<LongWritable, Text>, NullWritable, Text> {
