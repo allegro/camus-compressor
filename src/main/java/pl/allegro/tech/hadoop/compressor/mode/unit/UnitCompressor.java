@@ -60,10 +60,10 @@ public abstract class UnitCompressor<K, V> implements Compress {
             fetchedRddForInputPath.persist(StorageLevel.MEMORY_AND_DISK());
             long beforeCount = countIfRequested(fetchedRddForInputPath);
             repartition(fetchedRddForInputPath, outputDir, jobGroup, inputPathJobConf, inputAnalyser.countInputSplits(inputPath));
+            fetchedRddForInputPath.unpersist();
             JobConf outputPathJobConf = createJobConf(outputDir, inputPath);
             JavaPairRDD<K, V> fetchedRddForOutputPath = fetchRDD(outputPathJobConf);
             long afterCount = countIfRequested(fetchedRddForOutputPath);
-            fetchedRddForInputPath.unpersist();
 
             if (beforeCount != afterCount) {
                 logger.error(String.format("Counts are different: %d vs. %d", beforeCount, afterCount));
@@ -81,17 +81,15 @@ public abstract class UnitCompressor<K, V> implements Compress {
 
     private long countIfRequested(JavaPairRDD<K, V> rdd) throws IOException {
         if (calcCounts) {
-            return countOutputDir(rdd);
+            return rdd.count();
         } else {
             return -1L;
         }
     }
 
-    protected abstract JobConf createJobConf(String path, String schemaReaderPath);
-
     protected abstract JavaPairRDD<K, V> fetchRDD(JobConf jobConf) throws IOException;
 
-    protected abstract long countOutputDir(JavaPairRDD<K, V> rdd) throws IOException;
+    protected abstract JobConf createJobConf(String path, String schemaReaderPath);
 
     protected abstract void repartition(JavaPairRDD<K, V> rdd, String outputPath, String jobGroup, JobConf jobConf, int inputSplits)
             throws IOException;

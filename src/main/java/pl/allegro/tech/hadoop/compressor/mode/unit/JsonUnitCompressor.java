@@ -43,11 +43,6 @@ public class JsonUnitCompressor extends UnitCompressor<LongWritable, Text> {
     }
 
     @Override
-    protected long countOutputDir(JavaPairRDD rdd) throws IOException {
-        return rdd.count();
-    }
-
-    @Override
     protected void repartition(JavaPairRDD<LongWritable, Text> rdd, String outputPath, String jobGroup, JobConf jobConf, int inputSplits) throws IOException {
         final JavaPairRDD<NullWritable, Text> repartitionedRDD = rdd
                 .repartition(inputSplits)

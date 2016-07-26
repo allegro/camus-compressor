@@ -53,12 +53,6 @@ public class AvroUnitCompressor extends UnitCompressor<AvroWrapper<GenericRecord
     }
 
     @Override
-    protected long countOutputDir(JavaPairRDD rdd) throws IOException {
-        return rdd.count();
-    }
-
-
-    @Override
     protected void repartition(JavaPairRDD<AvroWrapper<GenericRecord>, NullWritable> rdd, String outputDir, String jobGroup, JobConf jobConf , int inputSplits)
             throws IOException {
 
