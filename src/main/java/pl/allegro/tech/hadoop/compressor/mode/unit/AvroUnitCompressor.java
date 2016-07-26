@@ -8,7 +8,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.log4j.Logger;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
@@ -17,9 +16,7 @@ import pl.allegro.tech.hadoop.compressor.util.InputAnalyser;
 
 import java.io.IOException;
 
-public class AvroUnitCompressor extends UnitCompressor {
-
-    private static final Logger logger = Logger.getLogger(AvroUnitCompressor.class);
+public class AvroUnitCompressor extends UnitCompressor<AvroWrapper<GenericRecord>, NullWritable> {
 
     private final JavaSparkContext sparkContext;
     private final SchemaRepository schemaRepository;
@@ -37,37 +34,31 @@ public class AvroUnitCompressor extends UnitCompressor {
         this.compression = compression;
     }
 
+
     @Override
-    protected long countOutputDir(String outputDir, String inputPath) throws IOException {
+    protected JobConf createJobConf(String path, String schemaReaderPath) {
         final JobConf jobConf = new JobConf(sparkContext.hadoopConfiguration());
-        final Schema schema = schemaRepository.findLatestSchema(inputPath);
+        final Schema schema = schemaRepository.findLatestSchema(schemaReaderPath);
 
         AvroJob.setOutputSchema(jobConf, schema);
-        FileInputFormat.setInputPaths(jobConf, outputDir);
+        FileInputFormat.setInputPaths(jobConf, path);
 
-        return compression
-                .openUncompressed(jobConf)
-                .count();
+        return jobConf;
     }
 
+    @Override
+    protected JavaPairRDD<AvroWrapper<GenericRecord>, NullWritable> fetchRDD(JobConf jobConf) throws IOException {
+        return compression
+                .openUncompressed(jobConf);
+    }
 
     @Override
-    protected void repartition(String inputPath, String outputDir, String jobGroup, int inputSplits)
+    protected void repartition(JavaPairRDD<AvroWrapper<GenericRecord>, NullWritable> rdd, String outputDir, String jobGroup, JobConf jobConf , int inputSplits)
             throws IOException {
 
-        final JobConf jobConf = new JobConf(sparkContext.hadoopConfiguration());
-        final Schema schema = schemaRepository.findLatestSchema(inputPath);
-
-        AvroJob.setOutputSchema(jobConf, schema);
-        FileInputFormat.setInputPaths(jobConf, inputPath);
-
-        final JavaPairRDD<AvroWrapper<GenericRecord>, NullWritable> repartitionedRDD = compression
-                .openUncompressed(jobConf)
-                .repartition(inputSplits);
+        final JavaPairRDD<AvroWrapper<GenericRecord>, NullWritable> repartitionedRDD = rdd.repartition(inputSplits);
 
         sparkContext.setJobGroup("compression", jobGroup);
-
-        logger.info("Compressing " + inputPath + " avro with schema " + schema.toString());
 
         compression.compress(repartitionedRDD, outputDir, jobConf);
     }
