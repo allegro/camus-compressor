@@ -1,6 +1,8 @@
 package pl.allegro.tech.hadoop.compressor;
 
+import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.ZkConnection;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroWrapper;
 import org.apache.hadoop.conf.Configuration;
@@ -142,7 +144,10 @@ public final class Compressor {
         }
 
         ZkClient zkClient = new ZkClient(compressorOptions.getZookeeperHosts());
-        final List<String> topics = new TopicRepository(zkClient).topicNames();
+
+        final List<String> topics = new TopicRepository(
+                new ZkUtils(zkClient, new ZkConnection(compressorOptions.getZookeeperHosts()), false))
+                .topicNames();
 
         final HashMap<String, String> inputPathToTopic = new HashMap<>();
 

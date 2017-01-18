@@ -5,6 +5,7 @@ import com.palantir.curatortestrule.SharedZooKeeperRule;
 import com.palantir.curatortestrule.ZooKeeperRule;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.ZkConnection;
 import org.apache.commons.io.IOUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
@@ -13,6 +14,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -26,8 +30,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -66,10 +72,13 @@ public class CompressorIntegrationTest {
     public void setUpZookeeper() throws Exception {
         zookeeper = sharedZookeeper.getClient();
         final ZkClient zkClient = new ZkClient(zookeeper.getZookeeperClient().getCurrentConnectionString());
-        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic1_avro", TOPIC_PAYLOAD);
-        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic2_avro", TOPIC_PAYLOAD);
-        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic1", TOPIC_PAYLOAD);
-        ZkUtils.updatePersistentPath(zkClient, "/brokers/topics/topic2", TOPIC_PAYLOAD);
+        final ZkUtils zkUtils = new ZkUtils(zkClient,
+                new ZkConnection(zookeeper.getZookeeperClient().getCurrentConnectionString()), false);
+        final List<ACL> acls = Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("world", "anyone")));
+        zkUtils.updatePersistentPath("/brokers/topics/topic1_avro", TOPIC_PAYLOAD, acls);
+        zkUtils.updatePersistentPath("/brokers/topics/topic2_avro", TOPIC_PAYLOAD, acls);
+        zkUtils.updatePersistentPath("/brokers/topics/topic1", TOPIC_PAYLOAD, acls);
+        zkUtils.updatePersistentPath("/brokers/topics/topic2", TOPIC_PAYLOAD, acls);
     }
 
     @Before
@@ -86,7 +95,7 @@ public class CompressorIntegrationTest {
         System.setProperty("spark.compressor.avro.schema.repository.url", SCHEMAREPO_HOST);
         System.setProperty("spark.compressor.processing.delay", "1");
         System.setProperty("spark.compressor.processing.mode.all.excludes", "base,history,integration");
-        System.setProperty("spark.compressor.processing.mode.topic.pattern", "daily/*/*/*,hourly/*/*/*/*");
+        System.setProperty("spark.compressor.processing.mode.topic.pattern", "daily,hourly");
         System.setProperty("spark.compressor.processing.delay", "1");
         System.setProperty("spark.compressor.processing.calculate.counts", "true");
         System.setProperty("spark.compressor.zookeeper.paths",

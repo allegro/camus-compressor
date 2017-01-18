@@ -1,21 +1,20 @@
 package pl.allegro.tech.hadoop.compressor.kafka;
 
 import kafka.utils.ZkUtils;
-import org.I0Itec.zkclient.ZkClient;
 import scala.collection.JavaConversions;
 
 import java.util.List;
 
 public class TopicRepository {
 
-    private final ZkClient zkClient;
+    private final ZkUtils zkUtils;
 
-    public TopicRepository(ZkClient zkClient) {
-        this.zkClient = zkClient;
+    public TopicRepository(ZkUtils zkUtils) {
+        this.zkUtils= zkUtils;
     }
 
     public List<String> topicNames() {
-        return JavaConversions.asJavaList(ZkUtils.getAllTopics(zkClient));
+        return JavaConversions.seqAsJavaList(zkUtils.getAllTopics());
     }
 
 }
