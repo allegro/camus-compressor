@@ -51,7 +51,7 @@ repositories {
 }
 
 project.ext.versions = [
-        spark: '2.1.0',
+        spark: '1.6.2',
         scalaMinMaj: '2.11',
         scala: "2.11.8",
         hadoop: '2.6.0',
@@ -59,7 +59,7 @@ project.ext.versions = [
 ]
 
 configurations {
-//    all*.exclude group: 'javax.servlet'
+    all*.exclude group: 'javax.servlet'
     provided.exclude module: 'hadoop-client'
     integrationCompile.extendsFrom(testCompile)
 }
