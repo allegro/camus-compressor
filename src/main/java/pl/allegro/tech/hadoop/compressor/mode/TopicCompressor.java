@@ -1,10 +1,8 @@
 package pl.allegro.tech.hadoop.compressor.mode;
 
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.log4j.Logger;
 import pl.allegro.tech.hadoop.compressor.mode.unit.UnitCompressor;

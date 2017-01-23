@@ -39,7 +39,7 @@ public class JsonUnitCompressor extends UnitCompressor {
             throws IOException {
 
         final JavaPairRDD<NullWritable, Text> rdd = compression.openUncompressed(inputPath)
-                .repartition(inputSplits)
+                .coalesce(inputSplits)
                 .mapToPair(new RemoveKeyFunction());
 
         JobConf jobConf = new JobConf(context.hadoopConfiguration());

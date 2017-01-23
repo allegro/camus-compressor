@@ -78,7 +78,7 @@ public class JsonUnitCompressorTest {
         // given
         when(sparkContext.hadoopFile(eq(UNIT_PATH_NAME), eq(TextInputFormat.class),
                 eq(LongWritable.class), eq(Text.class))).thenReturn(testRDD);
-        when(testRDD.repartition(anyInt())).thenReturn(testRDD);
+        when(testRDD.coalesce(anyInt())).thenReturn(testRDD);
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
@@ -96,7 +96,7 @@ public class JsonUnitCompressorTest {
         // given
         when(sparkContext.hadoopFile(eq(UNIT_PATH_NAME), eq(TextInputFormat.class),
                 eq(LongWritable.class), eq(Text.class))).thenReturn(testRDD);
-        when(testRDD.repartition(anyInt())).thenReturn(testRDD);
+        when(testRDD.coalesce(anyInt())).thenReturn(testRDD);
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
@@ -126,7 +126,7 @@ public class JsonUnitCompressorTest {
         when(testRDD.count()).thenReturn(10L, 9L);
         when(sparkContext.hadoopFile(eq(UNIT_PATH_NAME), eq(TextInputFormat.class),
                 eq(LongWritable.class), eq(Text.class))).thenReturn(testRDD);
-        when(testRDD.repartition(anyInt())).thenReturn(testRDD);
+        when(testRDD.coalesce(anyInt())).thenReturn(testRDD);
         when(fileSystem.globStatus(any(Path.class))).thenReturn(TEST_STATUSES);
         when(compression.getExtension()).thenReturn(COMPRESSED_EXTENSION);
         when(compression.getSplits(anyLong())).thenReturn(TEST_NUM_SPLITS);
