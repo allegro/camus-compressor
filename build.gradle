@@ -12,11 +12,12 @@ buildscript {
 }
 
 plugins {
-    id 'pl.allegro.tech.build.axion-release'        version '1.2.3'
+    id 'pl.allegro.tech.build.axion-release'        version '1.4.1'
     id 'com.ewerk.gradle.plugins.integration-test'  version '1.0.8'
 }
 
 apply plugin: 'java'
+apply plugin: 'scala'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'application'
@@ -49,30 +50,41 @@ repositories {
     maven { url 'http://maven.twttr.com' }
 }
 
+project.ext.versions = [
+        spark: '1.6.2',
+        scalaMinMaj: '2.11',
+        scala: "2.11.8",
+        hadoop: '2.6.0',
+        kafka: '0.10.0.1'
+]
+
 configurations {
     all*.exclude group: 'javax.servlet'
     provided.exclude module: 'hadoop-client'
     integrationCompile.extendsFrom(testCompile)
 }
 
+def scaled(String dep) {
+    "${dep}_${project.ext.versions.scalaMinMaj}"
+}
+
 dependencies {
-    provided group: 'org.apache.spark',     name: 'spark-core_2.10',    version: '1.6.1'
-    provided group: 'org.scala-lang',       name: 'scala-library',      version: '2.10.2'
-    provided group: 'org.apache.hadoop',    name: 'hadoop-hdfs',        version: '2.6.0'
-    provided group: 'org.apache.hadoop',    name: 'hadoop-common',      version: '2.6.0'
+    provided group: 'org.apache.spark',          name: scaled('spark-core'), version: project.ext.versions.spark
+    provided group: 'org.scala-lang',            name: 'scala-library',      version: project.ext.versions.scala
+    provided group: 'org.apache.hadoop',         name: 'hadoop-hdfs',        version: project.ext.versions.hadoop
+    provided group: 'org.apache.hadoop',         name: 'hadoop-common',      version: project.ext.versions.hadoop
+    provided group: 'org.apache.httpcomponents', name: 'httpclient',         version: '4.5'
 
-    provided 'org.apache.httpcomponents:httpclient:4.5'
-
-    compile group: 'org.apache.hadoop',         name: 'hadoop-mapreduce-client-core',   version: '2.6.0'
+    compile group: 'org.apache.hadoop',         name: 'hadoop-mapreduce-client-core',   version: project.ext.versions.hadoop
     compile group: 'org.schemarepo',            name: 'schema-repo-client',             version: '0.1.3'
     compile group: 'com.hadoop.gplcompression', name: 'hadoop-lzo',                     version: '0.4.19'
 
-    compile group: 'org.apache.kafka',          name: 'kafka_2.10',     version: '0.8.2.2'
+    compile group: 'org.apache.kafka',          name: scaled('kafka'),     version: project.ext.versions.kafka
 
     testCompile group: 'org.mockito',       name: 'mockito-all',        version: '1.9.5'
     testCompile group: 'junit',             name: 'junit',              version: '4.11'
-    testCompile group: 'org.apache.hadoop', name: 'hadoop-hdfs',        version: '2.6.0', classifier: 'tests'
-    testCompile group: 'org.apache.hadoop', name: 'hadoop-common',      version: '2.6.0', classifier: 'tests'
+    testCompile group: 'org.apache.hadoop', name: 'hadoop-hdfs',        version: project.ext.versions.hadoop, classifier: 'tests'
+    testCompile group: 'org.apache.hadoop', name: 'hadoop-common',      version: project.ext.versions.hadoop, classifier: 'tests'
 
     testCompile (group: 'com.palantir',      name: 'curator-test-rule',  version: '0.0.3') {
         exclude group: 'com.google.guava'
@@ -100,9 +112,9 @@ shadowJar {
     exclude 'META-INF/*.DSA'
     exclude 'META-INF/*.RSA'
     dependencies {
-        exclude(dependency('org.apache.spark:spark-core_2.10:1.6.1'))
-        exclude(dependency('org.scala-lang:scala-library:2.10.2'))
-        exclude(dependency('org.apache.hadoop:hadoop-hdfs:2.6.0'))
+        exclude(dependency("org.apache.spark:${scaled('spark-core')}:${project.ext.versions.spark}"))
+        exclude(dependency("org.scala-lang:scala-library:${project.ext.versions.scala}"))
+        exclude(dependency("org.apache.hadoop:hadoop-hdfs:${project.ext.versions.hadoop}"))
     }
 }
 
@@ -155,5 +167,5 @@ integrationTest {
 
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.14'
+    gradleVersion = '3.2.1'
 }

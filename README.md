@@ -65,8 +65,8 @@ In a configuration file (`/etc/camus-compressor/camus-compressor.properties`) yo
  * `spark.compressor.processing.mode.all.excludes` - comma separated list of directories excluded from compression.
     If you want to blacklist some topics, you can pass their names here.
  * `spark.compressor.processing.mode.all.timeout.minutes` - after this period of time Compressor will be termineted. 
- * `spark.compressor.processing.mode.topic.pattern` - comma separated list of glob patterns of directories that need to 
-   be compressed. For Camus you can use `hourly/*/*/*/*,daily/*/*/*`. 
+ * `spark.compressor.processing.mode.topic.pattern` - comma separated list of directories that contains data that need to
+   be compressed. For Camus you can use `hourly,daily`.
  * `spark.compressor.processing.force` - by default Camus Compressor doesn't compress directories again. Set this 
    option to `true` to force recompression. 
  * `spark.compressor.processing.working.dir` - directory where temprary files will be stored.
