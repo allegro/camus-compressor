@@ -3,7 +3,7 @@ package pl.allegro.tech.hadoop.compressor.option;
 import org.apache.commons.lang.ClassUtils;
 import org.apache.spark.SparkConf;
 import pl.allegro.tech.hadoop.compressor.schema.IdentityTopicNameRetriever;
-import pl.allegro.tech.hadoop.compressor.schema.SchemaRepoSchemaRepository;
+import pl.allegro.tech.hadoop.compressor.schema.SchemaRegistrySchemaRepository;
 import pl.allegro.tech.hadoop.compressor.schema.SchemaRepository;
 import pl.allegro.tech.hadoop.compressor.schema.TopicNameRetriever;
 
@@ -47,11 +47,11 @@ public class CompressorOptions implements Serializable {
         allModeTimeout = sparkConf.getLong("spark.compressor.processing.mode.all.timeout.minutes", 1440L);
         calculateCounts = sparkConf.getBoolean("spark.compressor.processing.calculate.counts", true);
         try {
-            schemaRepositoryClass = (Class<SchemaRepository>)ClassUtils.getClass(
+            schemaRepositoryClass = (Class<SchemaRegistrySchemaRepository>)ClassUtils.getClass(
                     sparkConf.get("spark.compressor.avro.schema.repository.class",
-                            SchemaRepoSchemaRepository.class.getName()));
+                            SchemaRegistrySchemaRepository.class.getName()));
         } catch (ClassNotFoundException e) {
-            schemaRepositoryClass = SchemaRepoSchemaRepository.class;
+            schemaRepositoryClass = SchemaRegistrySchemaRepository.class;
         }
         try {
             topicNameRetrieverClass = (Class<TopicNameRetriever>)ClassUtils.getClass(

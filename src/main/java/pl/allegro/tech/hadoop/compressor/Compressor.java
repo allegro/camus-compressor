@@ -1,5 +1,6 @@
 package pl.allegro.tech.hadoop.compressor;
 
+import com.google.gson.Gson;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
@@ -14,8 +15,6 @@ import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.serializer.KryoSerializer;
-import org.schemarepo.json.GsonJsonUtil;
-import org.schemarepo.json.JsonUtil;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
 import pl.allegro.tech.hadoop.compressor.compression.CompressionBuilder;
 import pl.allegro.tech.hadoop.compressor.kafka.TopicRepository;
@@ -28,7 +27,7 @@ import pl.allegro.tech.hadoop.compressor.mode.unit.UnitCompressor;
 import pl.allegro.tech.hadoop.compressor.option.CompressorOptions;
 import pl.allegro.tech.hadoop.compressor.option.FilesFormat;
 import pl.allegro.tech.hadoop.compressor.schema.IdentityTopicNameRetriever;
-import pl.allegro.tech.hadoop.compressor.schema.SchemaRepoSchemaRepository;
+import pl.allegro.tech.hadoop.compressor.schema.SchemaRegistrySchemaRepository;
 import pl.allegro.tech.hadoop.compressor.schema.SchemaRepository;
 import pl.allegro.tech.hadoop.compressor.schema.TopicNameRetriever;
 import pl.allegro.tech.hadoop.compressor.util.FileSystemUtils;
@@ -117,11 +116,12 @@ public final class Compressor {
         SchemaRepository schemaRepository;
         try {
             schemaRepository = compressorOptions.getSchemaRepositoryClass()
-                    .getConstructor(String.class, JsonUtil.class, TopicNameRetriever.class)
-                    .newInstance(compressorOptions.getSchemaRepositoryUrl(), new GsonJsonUtil(), topicNameRetriever);
+                    .getConstructor(String.class, Gson.class, TopicNameRetriever.class)
+                    .newInstance(compressorOptions.getSchemaRepositoryUrl(), new Gson(),
+                            topicNameRetriever);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            schemaRepository = new SchemaRepoSchemaRepository(compressorOptions.getSchemaRepositoryUrl(), new GsonJsonUtil(),
-                    topicNameRetriever);
+            schemaRepository = new SchemaRegistrySchemaRepository(compressorOptions.getSchemaRepositoryUrl(),
+                    new Gson(), topicNameRetriever);
         }
         return schemaRepository;
     }
