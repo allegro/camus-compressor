@@ -1,6 +1,7 @@
 package pl.allegro.tech.hadoop.compressor;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.google.gson.Gson;
 import com.palantir.curatortestrule.SharedZooKeeperRule;
 import com.palantir.curatortestrule.ZooKeeperRule;
 import kafka.utils.ZkUtils;
@@ -24,6 +25,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import pl.allegro.tech.hadoop.compressor.schema.SchemaRegistrySchemaRepository;
 import pl.allegro.tech.hadoop.compressor.util.FileSystemUtils;
 
 import java.io.File;
@@ -44,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 @FixMethodOrder(MethodSorters.DEFAULT)
 public class CompressorIntegrationTest {
 
-    private static final String SCHEMAREPO_HOST = "http://localhost:2877/schema-repo";
+    private static final String SCHEMAREPO_HOST = "http://localhost:2877";
     private static final int SCHEMAREPO_PORT = 2877;
 
     private static final long UNCOMPRESSED_JSON_SIZE = 34L;
@@ -87,7 +89,7 @@ public class CompressorIntegrationTest {
         System.setProperty("spark.driver.allowMultipleContexts", "true");
         System.setProperty("spark.executor.instances", "1");
         System.setProperty("spark.compressor.avro.schema.repository.class",
-                "pl.allegro.tech.hadoop.compressor.schema.SchemaRepoSchemaRepository");
+                "pl.allegro.tech.hadoop.compressor.schema.SchemaRegistrySchemaRepository");
         System.setProperty("spark.compressor.processing.topic-name-retriever.class",
                 "pl.allegro.tech.hadoop.compressor.schema.KafkaTopicNameRetriever");
         System.setProperty("spark.compressor.processing.mode", "all");
@@ -169,13 +171,13 @@ public class CompressorIntegrationTest {
     }
 
     private void stubSchemaRepo(String schema, String topicName) throws Exception {
-        wireMock.stubFor(get(urlPathEqualTo("/schema-repo/" + topicName + "/latest"))
+        final SchemaRegistrySchemaRepository.SchemaEntry schemaEntry = new SchemaRegistrySchemaRepository.SchemaEntry();
+        schemaEntry.setSchema(schema);
+        final String schemaString = new Gson().toJson(schemaEntry);
+
+        wireMock.stubFor(get(urlPathEqualTo("/subjects/" + topicName + "/versions/latest"))
                 .willReturn(aResponse()
-                        .withBody(schema)
-                        .withStatus(200)));
-        wireMock.stubFor(get(urlPathEqualTo("/schema-repo/" + topicName))
-                .willReturn(aResponse()
-                        .withBody("1\t" + schema)
+                        .withBody(schemaString)
                         .withStatus(200)));
     }
 
