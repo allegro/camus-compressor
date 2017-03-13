@@ -36,10 +36,12 @@ import pl.allegro.tech.hadoop.compressor.util.TopicDateFilter;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class Compressor {
 
@@ -145,9 +147,11 @@ public final class Compressor {
 
         ZkClient zkClient = new ZkClient(compressorOptions.getZookeeperHosts());
 
-        final List<String> topics = new TopicRepository(
-                new ZkUtils(zkClient, new ZkConnection(compressorOptions.getZookeeperHosts()), false))
-                .topicNames();
+        List<ZkUtils> zkUtilsList = new ArrayList<>();
+        for (String host: compressorOptions.getZookeeperHosts().split(",")) {
+            zkUtilsList.add(new ZkUtils(zkClient, new ZkConnection(host), false));
+        }
+        final Set<String> topics = new TopicRepository(zkUtilsList).topicNames();
 
         final HashMap<String, String> inputPathToTopic = new HashMap<>();
 

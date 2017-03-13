@@ -101,7 +101,7 @@ public class CompressorIntegrationTest {
         System.setProperty("spark.compressor.processing.delay", "1");
         System.setProperty("spark.compressor.processing.calculate.counts", "true");
         System.setProperty("spark.compressor.zookeeper.paths",
-                zookeeper.getZookeeperClient().getCurrentConnectionString());
+                zookeeper.getZookeeperClient().getCurrentConnectionString()+","+zookeeper.getZookeeperClient().getCurrentConnectionString());
         baseDir = Files.createTempDirectory("hdfs").toFile();
         FileUtil.fullyDelete(baseDir);
 
