@@ -1,11 +1,13 @@
 package pl.allegro.tech.hadoop.compressor;
 
+import com.google.common.base.Splitter;
 import com.google.gson.Gson;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroWrapper;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
@@ -144,11 +146,10 @@ public final class Compressor {
         if (compressorOptions.getTopicNameRetrieverClass().equals(IdentityTopicNameRetriever.class)) {
             return new HashMap<>();
         }
-
-        ZkClient zkClient = new ZkClient(compressorOptions.getZookeeperHosts());
-
         List<ZkUtils> zkUtilsList = new ArrayList<>();
-        for (String host: compressorOptions.getZookeeperHosts().split(",")) {
+        for (String host: StringUtils.split(compressorOptions.getZookeeperHosts(), ',')) {
+            ZkClient zkClient = new ZkClient(host);
+            logger.info("Connecting to zookeeper " + host);
             zkUtilsList.add(new ZkUtils(zkClient, new ZkConnection(host), false));
         }
         final Set<String> topics = new TopicRepository(zkUtilsList).topicNames();
