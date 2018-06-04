@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.serializer.KryoSerializer;
+import org.apache.spark.sql.SparkSession;
 import pl.allegro.tech.hadoop.compressor.compression.Compression;
 import pl.allegro.tech.hadoop.compressor.compression.CompressionBuilder;
 import pl.allegro.tech.hadoop.compressor.kafka.TopicRepository;
@@ -70,7 +71,12 @@ public final class Compressor {
                 .setAppName(compressorOptions.getFormat().name() + " compression in " + compressorOptions.getInputDir())
                 .set("spark.serializer", KryoSerializer.class.getName());
 
-        sparkContext = new JavaSparkContext(sparkConf);
+        SparkSession spark = SparkSession
+                .builder()
+                .config(sparkConf)
+                .getOrCreate();
+
+        sparkContext = new JavaSparkContext(spark.sparkContext());
 
         final Configuration configuration = FileSystemUtils.getConfiguration(sparkContext);
         fileSystem = FileSystemUtils.getFileSystem(configuration);
