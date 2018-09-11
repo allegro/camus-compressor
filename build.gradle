@@ -51,15 +51,15 @@ repositories {
 }
 
 project.ext.versions = [
-        spark: '1.6.2',
+        spark: '2.3.0',
         scalaMinMaj: '2.11',
         scala: "2.11.8",
-        hadoop: '2.6.0',
+        hadoop: '2.7.0',
         kafka: '0.10.0.1'
 ]
 
 configurations {
-    all*.exclude group: 'javax.servlet'
+    //all*.exclude group: 'javax.servlet'
     provided.exclude module: 'hadoop-client'
     integrationCompile.extendsFrom(testCompile)
 }
@@ -69,23 +69,23 @@ def scaled(String dep) {
 }
 
 dependencies {
-    provided group: 'org.apache.spark',          name: scaled('spark-core'), version: project.ext.versions.spark
+    provided group: 'org.apache.spark',          name: scaled('spark-sql'),  version: project.ext.versions.spark
     provided group: 'org.scala-lang',            name: 'scala-library',      version: project.ext.versions.scala
     provided group: 'org.apache.hadoop',         name: 'hadoop-hdfs',        version: project.ext.versions.hadoop
     provided group: 'org.apache.hadoop',         name: 'hadoop-common',      version: project.ext.versions.hadoop
     provided group: 'org.apache.httpcomponents', name: 'httpclient',         version: '4.5'
+    provided group: 'org.apache.hadoop',         name: 'hadoop-mapreduce-client-core',   version: project.ext.versions.hadoop
 
-    compile group: 'org.apache.hadoop',         name: 'hadoop-mapreduce-client-core',   version: project.ext.versions.hadoop
-    compile group: 'com.hadoop.gplcompression', name: 'hadoop-lzo',                     version: '0.4.19'
-
+    compile group: 'com.hadoop.gplcompression',  name: 'hadoop-lzo',                     version: '0.4.19'
     compile group: 'org.apache.kafka',          name: scaled('kafka'),     version: project.ext.versions.kafka
+    compile group: 'org.lz4',                   name: 'lz4-java',          version: '1.4.1'
 
     testCompile group: 'org.mockito',       name: 'mockito-all',        version: '1.9.5'
     testCompile group: 'junit',             name: 'junit',              version: '4.11'
     testCompile group: 'org.apache.hadoop', name: 'hadoop-hdfs',        version: project.ext.versions.hadoop, classifier: 'tests'
     testCompile group: 'org.apache.hadoop', name: 'hadoop-common',      version: project.ext.versions.hadoop, classifier: 'tests'
 
-    testCompile (group: 'com.palantir',      name: 'curator-test-rule',  version: '0.0.3') {
+    testCompile (group: 'com.palantir',     name: 'curator-test-rule',  version: '0.0.3') {
         exclude group: 'com.google.guava'
     }
 
@@ -107,13 +107,14 @@ idea {
 /***** packaging *****/
 
 shadowJar {
+    zip64 true
     mergeServiceFiles()
     exclude 'META-INF/*.DSA'
     exclude 'META-INF/*.RSA'
     dependencies {
-        exclude(dependency("org.apache.spark:${scaled('spark-core')}:${project.ext.versions.spark}"))
-        exclude(dependency("org.scala-lang:scala-library:${project.ext.versions.scala}"))
-        exclude(dependency("org.apache.hadoop:hadoop-hdfs:${project.ext.versions.hadoop}"))
+       // exclude(dependency("org.apache.spark:${scaled('spark-core')}:${project.ext.versions.spark}"))
+       // exclude(dependency("org.scala-lang:scala-library:${project.ext.versions.scala}"))
+       // exclude(dependency("org.apache.hadoop:hadoop-hdfs:${project.ext.versions.hadoop}"))
     }
 }
 

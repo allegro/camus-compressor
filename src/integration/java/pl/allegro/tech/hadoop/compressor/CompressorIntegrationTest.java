@@ -10,20 +10,12 @@ import org.I0Itec.zkclient.ZkConnection;
 import org.apache.commons.io.IOUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runners.MethodSorters;
 import pl.allegro.tech.hadoop.compressor.schema.SchemaRegistrySchemaRepository;
 import pl.allegro.tech.hadoop.compressor.util.FileSystemUtils;
@@ -56,10 +48,9 @@ public class CompressorIntegrationTest {
     private static final long COMPRESSED_AVRO_SIZE = 527L;
     private static final String TOPIC_PAYLOAD = "{\"version\":1,\"partitions\":{\"0\":[114,224]}}";
 
-    private File baseDir;
-    private String hdfsURI;
-    private FileSystem fileSystem;
-    private MiniDFSCluster hdfsCluster;
+    private static File baseDir;
+    private static FileSystem fileSystem;
+    private static MiniDFSCluster hdfsCluster;
     private String todayPath;
     private String pastDayPath;
 
@@ -68,10 +59,10 @@ public class CompressorIntegrationTest {
 
     @Rule
     public WireMockRule wireMock = new WireMockRule(SCHEMAREPO_PORT);
-    private CuratorFramework zookeeper;
+    private static CuratorFramework zookeeper;
 
-    @Before
-    public void setUpZookeeper() throws Exception {
+    @BeforeClass
+    public static void setUpZookeeper() throws Exception {
         zookeeper = sharedZookeeper.getClient();
         final ZkClient zkClient = new ZkClient(zookeeper.getZookeeperClient().getCurrentConnectionString());
         final ZkUtils zkUtils = new ZkUtils(zkClient,
@@ -83,8 +74,8 @@ public class CompressorIntegrationTest {
         zkUtils.updatePersistentPath("/brokers/topics/topic2", TOPIC_PAYLOAD, acls);
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         System.setProperty("spark.master", "local");
         System.setProperty("spark.driver.allowMultipleContexts", "true");
         System.setProperty("spark.executor.instances", "1");
@@ -109,7 +100,6 @@ public class CompressorIntegrationTest {
         conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
         MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
         hdfsCluster = builder.build();
-        hdfsURI = "hdfs://localhost:" + hdfsCluster.getNameNodePort() + "/";
 
         Iterator<Entry<String, String>> i = conf.iterator();
         while (i.hasNext()) {
@@ -119,8 +109,8 @@ public class CompressorIntegrationTest {
         fileSystem = FileSystemUtils.getFileSystem(conf);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         hdfsCluster.shutdown();
         FileUtil.fullyDelete(baseDir);
     }

@@ -4,14 +4,14 @@
 QUEUE="default"
 PROPERTIES_FILE='/etc/camus-compressor/camus-compressor.properties'
 EXECUTORS=2
-SPARK_MASTER='yarn-cluster'
+SPARK_MASTER='yarn'
 SPARK_CONFIG=""
 DRIVER_MEMORY="1g"
 EXECUTOR_MEMORY="1g"
 APP_NAME=""
 
 function usage {
-  echo "Usage: SPARK_SUBMIT=/usr/bin/spark-submit compressor.sh [-a APP_NAME] [-n executor_memory] [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
+  echo "Usage: SPARK_SUBMIT=spark-submit2.3.0 compressor.sh [-a APP_NAME] [-n executor_memory] [-d driver_memory] [-c compression_format] [-e number_of_executors] [[-c conf]...] -P properties-file"
   echo "  Default queue is \"default\""
   echo "  Default number of executors is 2"
   echo "  Default driver memory is 1g"
@@ -26,7 +26,7 @@ function usage {
 }
 
 if [ "$SPARK_SUBMIT" == "" ]; then
-    SPARK_SUBMIT="/usr/bin/spark-submit1.6"
+    SPARK_SUBMIT="spark-submit2.3.0"
 fi
 
 while getopts ":q:e:P:c:m:d:n:a:" opt; do
@@ -78,7 +78,11 @@ $SPARK_SUBMIT --properties-file $PROPERTIES_FILE \
   --driver-memory $DRIVER_MEMORY \
   --executor-memory $EXECUTOR_MEMORY \
   --master "$SPARK_MASTER" \
+  --deploy-mode cluster \
   --num-executors $EXECUTORS \
+  --conf spark.yarn.appMasterEnv.JAVA_HOME=/opt/jre1.8.0 \
+  --conf spark.executorEnv.JAVA_HOME=/opt/jre1.8.0 \
+  --conf spark.yarn.user.classpath.first=true \
   $APP_NAME \
   $SPARK_CONFIG \
   /usr/lib/hadoop-tools/camus-compressor/compressor.jar
