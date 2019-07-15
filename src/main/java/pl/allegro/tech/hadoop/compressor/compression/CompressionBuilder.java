@@ -93,6 +93,9 @@ public class CompressionBuilder {
             } else if (CompressionFormat.SNAPPY.equals(compressionFormat)) {
                 return new SnappyCompression<>(sparkContext, fileSystem, jsonKeyClass, jsonSaveKeyClass, jsonValueClass,
                         jsonInputFormat, jsonOutputFormat);
+            } if (CompressionFormat.GZIP.equals(compressionFormat)) {
+                return new GzipCompression<>(sparkContext, fileSystem, jsonKeyClass, jsonSaveKeyClass, jsonValueClass,
+                        jsonInputFormat, jsonOutputFormat);
             } else if (CompressionFormat.LZO.equals(compressionFormat)) {
                 return new LzoCompression<>(sparkContext, fileSystem, jsonKeyClass, jsonSaveKeyClass, jsonValueClass,
                         jsonInputFormat, jsonOutputFormat);
